@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>协会介绍</title>
+    <style>
+        /* 引入本地字体 */
+        @font-face {
+            font-family: "MyFont";
+            src: url("zh-cn.woff2") format("woff2"),
+                 url("zh-cn-subset.ttf") format("truetype");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;               /* 禁止页面滚动，避免出现滚动条 */
+            font-family: "MyFont", "Microsoft YaHei", Arial, sans-serif;
+        }
+
+        /* ================= 关键帧动画 ================= */
+
+        /* 左侧竖条整体从左边滑入 */
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); opacity: 0; }
+            to   { transform: translateX(0);     opacity: 1; }
+        }
+
+        /* 菜单项错落出现：淡入 + 从左侧滑入 */
+        @keyframes fadeSlideIn {
+            from { transform: translateX(-30px); opacity: 0; }
+            to   { transform: translateX(0);     opacity: 1; }
+        }
+
+        /* 右侧详情淡入 + 上滑 */
+        @keyframes fadeUp {
+            from { transform: translateY(24px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* 背景光晕脉动 */
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.35; }
+            50%      { opacity: 0.7;  }
+        }
+
+        /* ================= 布局 ================= */
+
+        /* 页面容器：占满视口高度 */
+        .container {
+            display: flex;
+            flex-direction: row;   /* 左竖条 + 右详情 */
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左侧竖条：占 30% 宽度 */
+        .sidebar {
+            width: 30%;
+            background: #287ee3;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            animation: slideInLeft 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        /* 竖条上的动态光晕装饰 */
+        .sidebar::after {
+            content: "";
+            position: absolute;
+            top: -40%;
+            right: -60%;
+            width: 160%;
+            height: 120%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, transparent 60%);
+            animation: glowPulse 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        /* 返回按钮 */
+        .back-btn {
+            padding: 16px 24px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            user-select: none;
+            transition: background 0.25s ease, padding-left 0.25s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            padding-left: 32px;          /* 悬停时整体右移 */
+        }
+
+        /* 竖条菜单项：从上到下 */
+        .menu-item {
+            padding: 20px 24px;
+            font-size: 1.15rem;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            position: relative;
+            user-select: none;
+            transition: background 0.25s ease, padding-left 0.25s ease,
+                        border-left-color 0.25s ease;
+            /* 错落出现动画，延迟由 JS 设置 */
+            animation: fadeSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            padding-left: 34px;          /* 悬停时缩进，产生滑动感 */
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.25);
+            border-left-color: #ffffff;
+            font-weight: bold;
+            padding-left: 34px;
+        }
+
+        /* 右侧详情：占 70% 宽度 */
+        .detail {
+            width: 70%;
+            padding: 40px;
+            overflow-y: auto;
+            background: #f9fbfd;
+        }
+
+        .detail h1 {
+            font-size: 1.8rem;
+            color: #287ee3;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #287ee3;
+            padding-bottom: 10px;
+        }
+
+        .detail p {
+            font-size: 1.1rem;
+            line-height: 1.9;
+            color: #333;
+        }
+
+        /* 详情切换时重播的动画 */
+        .detail .animate-in {
+            animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        /* ---------- 协会简介内容排版 ---------- */
+
+        /* 顶部：Logo + 协会名称（初版横向排版） */
+        .intro-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+
+        .intro-header .logo {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .intro-header .org-name {
+            font-size: 1.7rem;
+            font-weight: bold;
+            color: #287ee3;
+            line-height: 1.4;
+        }
+
+        .intro-header .org-abbr {
+            display: block;
+            font-size: 1.05rem;
+            font-weight: normal;
+            color: #666;
+            margin-top: 6px;
+        }
+
+        /* 正文段落 */
+        .intro-body p {
+            font-size: 1.08rem;
+            line-height: 2;
+            color: #333;
+            margin-bottom: 18px;
+            text-align: justify;
+        }
+
+        /* 荣誉小节标题 */
+        .intro-subtitle {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #287ee3;
+            margin: 26px 0 14px;
+            padding-left: 12px;
+            border-left: 5px solid #287ee3;
+        }
+
+        /* 荣誉列表 */
+        .honor-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .honor-list li {
+            position: relative;
+            padding: 10px 14px 10px 34px;
+            font-size: 1.02rem;
+            line-height: 1.7;
+            color: #333;
+            background: #eef5fe;
+            border-radius: 0;               /* 直角，与整体风格一致 */
+        }
+
+        .honor-list li::before {
+            content: "";
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: #287ee3;
+        }
+
+        /* ---------- 带配文的图片 ---------- */
+        figure.doc-figure {
+            margin: 24px 0;
+            text-align: center;
+        }
+
+        figure.doc-figure img {
+            display: block;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            object-fit: cover;
+            border: 1px solid #d0d7de;
+        }
+
+        figure.doc-figure figcaption {
+            margin-top: 10px;
+            font-size: 0.98rem;
+            color: #666;
+        }
+
+        /* ---------- 并排图片组（共用一个图注） ---------- */
+        figure.doc-figure-group {
+            margin: 24px 0;
+            text-align: center;
+        }
+
+        .figure-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .figure-row img {
+            height: 340px;              /* 固定高度，使两张图视觉上一样大 */
+            width: auto;                /* 宽度按比例自适应 */
+            max-width: 48%;
+            object-fit: cover;
+            border: 1px solid #d0d7de;
+            display: block;
+        }
+
+        figure.doc-figure-group figcaption {
+            margin-top: 10px;
+            font-size: 0.98rem;
+            color: #666;
+        }
+
+        /* ---------- 宣传组图片：上排两竖图 + 下排一横图（共用图注，图注在上） ---------- */
+        .promote-figure {
+            margin: 24px 0;
+            text-align: center;
+        }
+
+        .promote-figure figcaption {
+            margin-bottom: 12px;        /* 图注置于图片上方 */
+            font-size: 0.98rem;
+            color: #666;
+        }
+
+        .promote-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 上排：两张竖图并排（完整显示，不裁切） */
+        .promote-top {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .promote-top img {
+            width: 48%;
+            height: 360px;
+            object-fit: contain;        /* 等比缩放，完整显示图片 */
+            background: #ffffff;        /* 留白区域填白，避免透视背景 */
+            border: 1px solid #d0d7de;
+            display: block;
+        }
+
+        /* 下排：一张横图（完整显示，不裁切） */
+        .promote-bottom img {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;        /* 等比缩放，完整显示图片 */
+            background: #ffffff;
+            border: 1px solid #d0d7de;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧竖条 -->
+        <div class="sidebar">
+            <div class="back-btn" onclick="window.location.href='index.html'">&larr; 返回首页</div>
+            <div class="menu-item active" onclick="showDetail(this, '协会简介')">协会简介</div>
+            <div class="menu-item" onclick="showDetail(this, '裁判队')">裁判队</div>
+            <div class="menu-item" onclick="showDetail(this, '协会办公室')">协会办公室</div>
+            <div class="menu-item" onclick="showDetail(this, '协会宣传组')">协会宣传组</div>
+            <div class="menu-item" onclick="showDetail(this, '协会活动组')">协会活动组</div>
+        </div>
+
+        <!-- 右侧详情 -->
+        <div class="detail" id="detail"></div>
+    </div>
+
+    <script>
+        // 给菜单项设置错落的出现延迟
+        document.querySelectorAll('.menu-item').forEach(function (item, i) {
+            item.style.animationDelay = (0.15 + i * 0.08) + 's';
+        });
+
+        // 重新触发元素入场动画
+        function replayAnimation(el) {
+            el.classList.remove('animate-in');
+            void el.offsetWidth;   // 强制重排，使动画可重播
+            el.classList.add('animate-in');
+        }
+
+        // "协会简介"板块内容（来自 Intro/IntroPage）
+        var INTRO_HTML =
+            '<h1 class="animate-in">协会简介</h1>' +
+            '<div class="intro-header animate-in">' +
+                '<img class="logo" src="logo-emblem.png" alt="协会Logo">' +
+                '<div class="org-name">长沙理工大学学生羽毛球协会' +
+                    '<span class="org-abbr">简称“羽协”</span>' +
+                '</div>' +
+            '</div>' +
+            '<div class="intro-body">' +
+                '<p class="animate-in">我们协会成立于 1994 年，是运动型社团，隶属于校团委学生社团联合会，' +
+                    '紧密围绕校园文化，联系广大羽毛球爱好者进行健身运动。截至 2025 年统计时，' +
+                    '是长沙理工大学最大的运动类社团。</p>' +
+            '</div>' +
+            '<div class="intro-subtitle animate-in">荣誉一览</div>' +
+            '<ul class="honor-list animate-in">' +
+                '<li>2007 年、2008 年连续两年被评为长沙理工大学“优秀社团”</li>' +
+                '<li>2008–2009 学年，荣获“最佳风采奖”和“精品社团”的最高荣誉</li>' +
+                '<li>2009–2010 学年，被授予校“五星社团”荣誉；组织志愿者参加中国羽毛球俱乐部超级联赛，被授予“志愿者先进集体”</li>' +
+                '<li>2017–2018 学年，“暖冬”团学活动获二等奖</li>' +
+                '<li>2017–2018 学年，“春雨”团学活动获一等奖</li>' +
+                '<li>2018–2019 学年，“春雨”团学活动获一等奖</li>' +
+                '<li>2019–2020 学年，“暖冬”团学活动获三等奖</li>' +
+                '<li>2020–2021 学年，“春语”团学活动获一等奖</li>' +
+                '<li>第十二届社团风采节“我最喜爱的长理社团”</li>' +
+                '<li>第十二届“风采节社团评优”中被评为红旗团支部</li>' +
+                '<li>第十三届社团风采节“我最喜爱的长理社团”</li>' +
+            '</ul>';
+
+        // "裁判队"板块内容（来自 Intro/IntroPage/Juge.txt + juge-pic.jpg）
+        var JUDGE_HTML =
+            '<h1 class="animate-in">裁判队</h1>' +
+            '<div class="intro-body">' +
+                '<p class="animate-in">裁判组是长理羽协的部门之一，参与校内各个羽毛球赛事的队伍，' +
+                    '同时也参与执裁长沙市内大大小小的羽毛球赛事。</p>' +
+                '<p class="animate-in">目前，裁判组培养出多名二级裁判，服务于各项羽毛球比赛。</p>' +
+                '<p class="animate-in">来这里，你会通晓羽毛球每一个细微的规则、学会精准地记录得分表，' +
+                    '以后周边有相关的业余赛事的时候，你也可以凭借在羽协的经历，充分用好这项技能，' +
+                    '从而得到应有的回报！</p>' +
+                '<p class="animate-in">加入裁判组可以学习羽毛球裁判知识，了解更多的羽毛球规则，' +
+                    '在每次学习的过程中认识更多优秀的裁判以及收获指导，并且可以提升自己的沟通水平能力，' +
+                    '以及处理突发事情的思维态度。</p>' +
+                '<p class="animate-in">在每次比赛结束后，对自己的问题进行思考复盘。' +
+                    '也能收获一群志同道合的朋友，我们在比赛举办中积累了感情，' +
+                    '会一起讨论工作的错误，一起吐槽运动员。</p>' +
+            '</div>' +
+            '<figure class="doc-figure animate-in">' +
+                '<img src="Intro/IntroPage/juge-pic-thumb.jpg" alt="裁判队">' +
+                '<figcaption>裁判队队长比赛后对裁判员进行指导</figcaption>' +
+            '</figure>';
+
+        // "协会办公室"板块内容（来自 Intro/IntroPage/Office.txt + Office01/02.png）
+        var OFFICE_HTML =
+            '<h1 class="animate-in">协会办公室</h1>' +
+            '<div class="intro-body">' +
+                '<p class="animate-in">办公室是羽协的中心枢纽，负责协调各组顺利开展工作，' +
+                    '管理财务及协会硬件设施，归纳、汇总相关各类资料信息，校审协会相关文件，' +
+                    '同时充当会员与协会沟通的窗口。</p>' +
+            '</div>' +
+            '<div class="intro-subtitle animate-in">主要职能</div>' +
+            '<ul class="honor-list animate-in">' +
+                '<li>收集、管理、汇总、整理协会各类资料信息</li>' +
+                '<li>审校和发布协会对内外的各项通知等</li>' +
+                '<li>财务管理，统计和管理协会现有公共资产，同有关组协商报销事宜</li>' +
+            '</ul>' +
+            '<figure class="doc-figure-group animate-in">' +
+                '<div class="figure-row">' +
+                    '<img src="Intro/IntroPage/Office01-thumb.jpg" alt="策划书1">' +
+                    '<img src="Intro/IntroPage/Office02-thumb.jpg" alt="策划书2">' +
+                '</div>' +
+                '<figcaption>编写出的策划书</figcaption>' +
+            '</figure>';
+
+        // "协会宣传组"板块内容（来自 Intro/IntroPage/Promote.txt + Promote01/02/03.png）
+        var PROMOTE_HTML =
+            '<h1 class="animate-in">协会宣传组</h1>' +
+            '<div class="intro-body">' +
+                '<p class="animate-in">这里是羽协的宣传组，是羽协对外展示的“话筒”，' +
+                    '也是社团活动的“记录员”。与学生会等部门的宣传部不同，我们主要为不定期开展的社团活动服务，' +
+                    '作为社团学生组织，我们的氛围相对轻松愉快！</p>' +
+            '</div>' +
+            '<div class="intro-subtitle animate-in">主要职能</div>' +
+            '<ul class="honor-list animate-in">' +
+                '<li>管理协会宣传媒体，对协会的各项活动进行宣传</li>' +
+                '<li>对协会活动进行拍摄记录，并整理保存</li>' +
+                '<li>负责赛事活动的海报、易拉宝、喷绘、宣传册等宣传物资制作</li>' +
+                '<li>妥善保管协会历年资料，并及时更新</li>' +
+            '</ul>' +
+            '<figure class="promote-figure animate-in">' +
+                '<figcaption>协会的相关活动宣传材料</figcaption>' +
+                '<div class="promote-grid">' +
+                    '<div class="promote-top">' +
+                        '<img src="Intro/IntroPage/Promote02-thumb.jpg" alt="宣传材料1">' +
+                        '<img src="Intro/IntroPage/Promote03-thumb.jpg" alt="宣传材料2">' +
+                    '</div>' +
+                    '<div class="promote-bottom">' +
+                        '<img src="Intro/IntroPage/Promote01-thumb.jpg" alt="宣传材料3">' +
+                    '</div>' +
+                '</div>' +
+            '</figure>';
+
+        // "协会活动组"板块内容
+        var ACTIVITY_HTML =
+            '<h1 class="animate-in">协会活动组</h1>' +
+            '<div class="intro-body">' +
+                '<p class="animate-in">活动部在日常社团活动和一年一度“理工杯”（长理最大的学生羽毛球赛事）' +
+                    '的举办过程中都发挥着重要的作用。在这里，你可以学习到如何撰写策划书，' +
+                    '了解活动举办的一系列流程等，提升自己的沟通能力和组织策划能力。' +
+                    '当然，活动部是一个充满活力和热情的部门，你也可以遇到来自各个学院热爱羽毛球的朋友，' +
+                    '扩大自己的交友圈。</p>' +
+            '</div>' +
+            '<div class="intro-subtitle animate-in">我们的主要工作（包括但不限于）</div>' +
+            '<ul class="honor-list animate-in">' +
+                '<li>申请场地、租借器材设备</li>' +
+                '<li>与主管学院和学社联对接</li>' +
+                '<li>布置活动场地</li>' +
+            '</ul>';
+
+        // 各板块内容表：暂只有“协会简介”为真实内容，其余为标题占位
+        function buildDetailHTML(title) {
+            if (title === '协会简介') {
+                return INTRO_HTML;
+            }
+            if (title === '裁判队') {
+                return JUDGE_HTML;
+            }
+            if (title === '协会办公室') {
+                return OFFICE_HTML;
+            }
+            if (title === '协会宣传组') {
+                return PROMOTE_HTML;
+            }
+            if (title === '协会活动组') {
+                return ACTIVITY_HTML;
+            }
+            // 其余板块暂时只显示标题
+            return '<h1 class="animate-in">' + title + '</h1>' +
+                   '<p class="animate-in">' + title + '</p>';
+        }
+
+        // 切换右侧详情
+        var currentTitle = '协会简介';
+
+        function showDetail(el, title) {
+            document.querySelectorAll('.menu-item').forEach(function (item) {
+                item.classList.remove('active');
+            });
+            el.classList.add('active');
+
+            var detailEl = document.getElementById('detail');
+            detailEl.innerHTML = buildDetailHTML(title);
+            currentTitle = title;
+
+            // 重播所有内容块的入场动画
+            detailEl.querySelectorAll('.animate-in').forEach(function (node) {
+                replayAnimation(node);
+            });
+
+            // 切换板块后回到顶部
+            detailEl.scrollTop = 0;
+        }
+
+        // 首次加载：渲染“协会简介”
+        (function init() {
+            var detailEl = document.getElementById('detail');
+            detailEl.innerHTML = buildDetailHTML('协会简介');
+            detailEl.querySelectorAll('.animate-in').forEach(function (node) {
+                replayAnimation(node);
+            });
+
+            // 依次错落延迟，让首屏内容块逐个出现
+            detailEl.querySelectorAll('.animate-in').forEach(function (node, i) {
+                node.style.animationDelay = (i * 0.08) + 's';
+            });
+        })();
+    </script>
+</body>
+</html>

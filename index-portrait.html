@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#287ee3">
+    <title>长沙理工大学学生羽毛球协会 · 报名运营</title>
+    <link rel="icon" href="favicon.png" type="image/png">
+    <style>
+        /* 引入本地字体（已子集化的精简版本） */
+        @font-face {
+            font-family: "MyFont";
+            src: url("zh-cn.woff2") format("woff2"),
+                 url("zh-cn-subset.ttf") format("truetype");
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: "MyFont", "Microsoft YaHei", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ================= 关键帧动画 ================= */
+        @keyframes heroFade {
+            from { opacity: 0; transform: scale(1.04) translateZ(0); }
+            to   { opacity: 1; transform: scale(1)    translateZ(0); }
+        }
+        @keyframes cardIn {
+            from { transform: translateY(30px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+        @keyframes fadeUp {
+            from { transform: translateY(12px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { transform: translateY(0);     opacity: 1; }
+            to   { transform: translateY(-12px); opacity: 0; }
+        }
+
+        /* ================= 页面容器 ================= */
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* ================= 上半：背景 SVG 动画区（约 50%） ================= */
+        .hero {
+            position: relative;
+            height: 50%;
+            overflow: hidden;
+            background: #ffffff;
+            animation: heroFade 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .hero svg { display: block; width: 100%; height: 100%; }
+
+        /* SVG 内标题逐字浮现 */
+        .banner-title text {
+            opacity: 0;
+            animation: charIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes charIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        /* Logo：与标题同期淡入，之后静止 */
+        .emblem {
+            opacity: 0;
+            animation: emblemIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+        }
+        @keyframes emblemIn { from { opacity: 0; } to { opacity: 1; } }
+        /* 下划线扫出 */
+        .underline {
+            stroke-dasharray: 460;
+            stroke-dashoffset: 460;
+            animation: drawLine 1.1s ease 1s forwards;
+        }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+        /* 背景线条缓慢流动 */
+        .flow-line { stroke-dasharray: 12 24; animation: flowDash 10s linear infinite; }
+        @keyframes flowDash { to { stroke-dashoffset: -360; } }
+        .drift { animation: driftY 12s ease-in-out infinite; }
+        @keyframes driftY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        /* ================= 下半：按钮 + 信息区（约 50%） ================= */
+        .panel {
+            height: 50%;
+            background: #287ee3;
+            display: flex;
+            flex-direction: column;
+            padding: 12px 14px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            gap: 10px;
+        }
+
+        /* 三个按钮：竖排三行 */
+        .btn-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 0 0 auto;
+        }
+
+        .option-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 48px;
+            background: #ffffff;
+            color: #287ee3;
+            border: 2px solid #d0d7de;
+            border-radius: 0;
+            font-size: 1.15rem;
+            font-weight: bold;
+            user-select: none;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+            animation: cardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .option-btn.active {
+            background: #e8f6ff;
+            border-color: #4facfe;
+            color: #0077c2;
+        }
+
+        /* 信息区：固定较小高度，显示当前按钮对应的说明文字 */
+        .info-box {
+            flex: 0 0 auto;                 /* 不再撑满剩余空间 */
+            height: 132px;                  /* 固定较小高度 */
+            max-height: 132px;
+            background: #ffffff;
+            border: 2px solid #d0d7de;
+            border-radius: 0;
+            overflow: hidden;
+            position: relative;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .info-inner {
+            width: 100%;
+            color: #1f3a8a;
+            text-align: center;
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+        .info-inner.animate-in  { animation: fadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .info-inner.animate-out { animation: fadeOut 0.3s cubic-bezier(0.55, 0, 1, 0.45) both; }
+
+        /* 信息区内的部门列表 */
+        .info-dept {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        /* 信息区内的普通段落 */
+        .info-lines { display: flex; flex-direction: column; gap: 6px; }
+        .info-lines p { font-weight: bold; }
+        /* 风采提示文字 */
+        .info-slogan {
+            font-size: 1.25rem;
+            font-weight: bold;
+            letter-spacing: 0.2em;
+            color: #4f6bff;
+        }
+
+        /* 桌面/大屏访问时，提示这是竖屏专用页（但仍可用） */
+        @media (min-width: 821px) and (orientation: landscape) {
+            .panel { padding: 16px; }
+            .option-btn { height: 52px; font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 上半：背景 SVG 动画 -->
+        <div class="hero">
+            <svg id="hero-svg" viewBox="0 0 1080 900" preserveAspectRatio="xMidYMid slice"
+                 xmlns="http://www.w3.org/2000/svg" role="img"
+                 aria-label="长沙理工大学学生羽毛球协会">
+                <defs>
+                    <linearGradient id="lineBlue" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0"   stop-color="#2f6bff"/>
+                        <stop offset="0.5" stop-color="#5a6bff"/>
+                        <stop offset="1"   stop-color="#8a5bff"/>
+                    </linearGradient>
+                    <linearGradient id="lineViolet" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0"   stop-color="#7a5bff"/>
+                        <stop offset="1"   stop-color="#b15bff"/>
+                    </linearGradient>
+                    <linearGradient id="lineCyan" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0"   stop-color="#3fb8ff"/>
+                        <stop offset="0.5" stop-color="#4f8bff"/>
+                        <stop offset="1"   stop-color="#7a5bff"/>
+                    </linearGradient>
+                    <linearGradient id="lineFaint" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0"   stop-color="#4a5cff" stop-opacity="0.42"/>
+                        <stop offset="1"   stop-color="#a07bff" stop-opacity="0.10"/>
+                    </linearGradient>
+                    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0"   stop-color="#1f3a8a"/>
+                        <stop offset="0.6" stop-color="#3a4fd0"/>
+                        <stop offset="1"   stop-color="#7a4fe0"/>
+                    </linearGradient>
+                    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0"   stop-color="#2f9bff"/>
+                        <stop offset="0.5" stop-color="#4f6bff"/>
+                        <stop offset="1"   stop-color="#a04fef"/>
+                    </linearGradient>
+                </defs>
+
+                <!-- 背景：纯白 -->
+                <rect x="0" y="0" width="1080" height="900" fill="#ffffff"/>
+
+                <!-- ============ 纯线条背景装饰（蓝紫色系） ============ -->
+
+                <!-- 贯穿的流动曲线群 -->
+                <g fill="none" stroke="url(#lineFaint)" stroke-width="1.4">
+                    <path class="flow-line"               d="M-60 120 C 220 90,  480 200, 760 170 S 1200 250, 1400 210"/>
+                    <path class="flow-line" style="animation-duration:12s" d="M-60 200 C 240 170, 500 280, 780 250 S 1220 330, 1400 290"/>
+                    <path class="flow-line" style="animation-duration:10s" d="M-60 280 C 260 250, 520 360, 800 330 S 1240 410, 1400 370"/>
+                    <path class="flow-line" style="animation-duration:13s" d="M-60 360 C 280 330, 540 440, 820 410 S 1260 490, 1400 450"/>
+                    <path class="flow-line" style="animation-duration:11s" d="M-60 700 C 260 660, 540 760, 820 720 S 1260 800, 1400 760"/>
+                    <path class="flow-line" style="animation-duration:14s" d="M-60 780 C 280 740, 560 840, 840 800 S 1280 880, 1400 840"/>
+                </g>
+
+                <!-- 左上同心圆弧 -->
+                <g fill="none" class="drift">
+                    <circle cx="120" cy="80" r="80"  stroke="url(#lineBlue)"   stroke-width="2.2" stroke-opacity="0.5"/>
+                    <circle cx="120" cy="80" r="120" stroke="url(#lineViolet)" stroke-width="1.8" stroke-opacity="0.36"/>
+                    <circle cx="120" cy="80" r="165" stroke="url(#lineCyan)"   stroke-width="1.4" stroke-opacity="0.24"/>
+                    <circle cx="120" cy="80" r="215" stroke="url(#lineBlue)"   stroke-width="1.1" stroke-opacity="0.15"/>
+                </g>
+
+                <!-- 右下同心弧 -->
+                <g fill="none" class="drift" style="animation-delay:-4s">
+                    <circle cx="1000" cy="850" r="140" stroke="url(#lineViolet)" stroke-width="2.2" stroke-opacity="0.42"/>
+                    <circle cx="1000" cy="850" r="200" stroke="url(#lineBlue)"   stroke-width="1.6" stroke-opacity="0.26"/>
+                    <circle cx="1000" cy="850" r="265" stroke="url(#lineCyan)"   stroke-width="1.2" stroke-opacity="0.16"/>
+                </g>
+
+                <!-- 右上同心弧 -->
+                <g fill="none" class="drift" style="animation-delay:-2s">
+                    <circle cx="1010" cy="60" r="90"  stroke="url(#lineCyan)"   stroke-width="1.8" stroke-opacity="0.34"/>
+                    <circle cx="1010" cy="60" r="140" stroke="url(#lineViolet)" stroke-width="1.3" stroke-opacity="0.2"/>
+                </g>
+
+                <!-- 装饰点阵 -->
+                <g fill="none" stroke="url(#lineViolet)" stroke-width="1.2" stroke-opacity="0.42">
+                    <circle cx="860" cy="360" r="3"/>
+                    <circle cx="920" cy="410" r="3"/>
+                    <circle cx="980" cy="350" r="3"/>
+                    <circle cx="900" cy="520" r="3"/>
+                    <circle cx="960" cy="560" r="3"/>
+                </g>
+
+                <!-- 协会 Logo（居中偏上） -->
+                <g class="emblem">
+                    <image href="logo-emblem.webp" xlink:href="logo-emblem.png"
+                           x="420" y="180" width="240" height="240"
+                           preserveAspectRatio="xMidYMid meet"/>
+                </g>
+
+                <!-- 标题（居中，两行） -->
+                <g class="banner-title" font-family="MyFont, 'Microsoft YaHei', sans-serif" font-weight="bold" text-anchor="middle">
+                    <text x="540" y="520" font-size="64" fill="url(#titleGrad)">
+                        <tspan style="animation-delay:0.25s">长</tspan>
+                        <tspan style="animation-delay:0.33s">沙</tspan>
+                        <tspan style="animation-delay:0.41s">理</tspan>
+                        <tspan style="animation-delay:0.49s">工</tspan>
+                        <tspan style="animation-delay:0.57s">大</tspan>
+                        <tspan style="animation-delay:0.65s">学</tspan>
+                    </text>
+                    <text x="540" y="600" font-size="64" fill="url(#accentGrad)">
+                        <tspan style="animation-delay:0.73s">学</tspan>
+                        <tspan style="animation-delay:0.81s">生</tspan>
+                        <tspan style="animation-delay:0.89s">羽</tspan>
+                        <tspan style="animation-delay:0.97s">毛</tspan>
+                        <tspan style="animation-delay:1.05s">球</tspan>
+                        <tspan style="animation-delay:1.13s">协</tspan>
+                        <tspan style="animation-delay:1.21s">会</tspan>
+                    </text>
+                    <line class="underline" x1="330" y1="630" x2="750" y2="630"
+                          stroke="url(#accentGrad)" stroke-width="5" stroke-linecap="round"/>
+                </g>
+
+                <!-- 英文副标题 -->
+                <text x="540" y="680" text-anchor="middle" fill="#5a6bcc" font-size="20"
+                      font-family="Arial, sans-serif" letter-spacing="3">
+                    CSUST STUDENT BADMINTON ASSOCIATION
+                </text>
+            </svg>
+        </div>
+
+        <!-- 下半：三个按钮（竖排）+ 固定高度信息区 -->
+        <div class="panel">
+            <div class="btn-list">
+                <div class="option-btn" data-role="register" style="animation-delay:0.15s"
+                     onclick="onBtn('register', this)">报名协会运营</div>
+                <div class="option-btn" data-role="style" style="animation-delay:0.25s"
+                     onclick="onBtn('style', this)">协会风采</div>
+                <div class="option-btn" data-role="intro" style="animation-delay:0.35s"
+                     onclick="onBtn('intro', this)">协会介绍</div>
+            </div>
+            <div class="info-box">
+                <div class="info-inner" id="info"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var btns = document.querySelectorAll('.option-btn');
+        var infoEl = document.getElementById('info');
+
+        // 各按钮对应的信息区内容
+        // 竖屏逻辑下：协会风采不使用图片，显示提示文字"我们的风采"
+        var INFO = {
+            register:
+                '<div class="info-lines">' +
+                    '<p>报名加入协会运营</p>' +
+                    '<p>请下载并填写报名表</p>' +
+                '</div>',
+            style:
+                '<div class="info-slogan">我们的风采</div>',
+            intro:
+                '<div class="info-dept">' +
+                    '<span>裁判队</span>' +
+                    '<span>协会办公室</span>' +
+                    '<span>协会宣传组</span>' +
+                    '<span>协会活动组</span>' +
+                '</div>'
+        };
+
+        // 跳转目标
+        var LINKS = {
+            register: 'Regesiter/register.html',
+            style:    'Senrio/highlights.html',
+            intro:    'intro.html'
+        };
+
+        var OUT_MS = 300;
+        var switchToken = 0;
+
+        function replayAnimation(el) {
+            el.classList.remove('animate-in', 'animate-out');
+            void el.offsetWidth;
+            el.classList.add('animate-in');
+        }
+
+        // 切换信息区内容（带淡出淡入）
+        function showInfo(role) {
+            var token = ++switchToken;
+            var nextHTML = INFO[role] || '';
+
+            // infoEl 本身即 .info-inner 容器，直接替换内容并重播动画
+            infoEl.classList.remove('animate-in');
+            infoEl.classList.add('animate-out');
+            setTimeout(function () {
+                if (token !== switchToken) return;
+                infoEl.innerHTML = nextHTML;
+                replayAnimation(infoEl);
+            }, OUT_MS);
+        }
+
+        function setActive(role) {
+            btns.forEach(function (b) {
+                b.classList.toggle('active', b.getAttribute('data-role') === role);
+            });
+        }
+
+        // 点击按钮：显示对应文字 + 跳转二级页面
+        var jumping = false;
+        function onBtn(role, el) {
+            setActive(role);
+            showInfo(role);
+            if (jumping) return;
+            jumping = true;
+            // 略作停留，让用户看到信息区切换到对应文字
+            setTimeout(function () {
+                window.location.href = LINKS[role];
+            }, 260);
+        }
+
+        // ---------- 自动轮播（无操作时） ----------
+        var autoOrder = ['register', 'style', 'intro'];
+        var autoStep = 0;
+        var autoRunning = true;
+        var HOLD_MS = 3000;
+        var GAP_MS = 900;
+        var autoTimer = null;
+
+        function autoLoop() {
+            if (!autoRunning) return;
+            var role = autoOrder[autoStep];
+            setActive(role);
+            showInfo(role);
+            autoTimer = setTimeout(function () {
+                if (!autoRunning) return;
+                // 暂时取消高亮
+                setActive(null);
+                autoTimer = setTimeout(function () {
+                    if (!autoRunning) return;
+                    autoStep = (autoStep + 1) % autoOrder.length;
+                    autoLoop();
+                }, GAP_MS);
+            }, HOLD_MS);
+        }
+
+        // 用户交互即暂停自动轮播
+        function stopAuto() {
+            autoRunning = false;
+            if (autoTimer) clearTimeout(autoTimer);
+        }
+        btns.forEach(function (b) {
+            b.addEventListener('touchstart', stopAuto, { passive: true });
+        });
+
+        // 启动自动轮播
+        autoLoop();
+
+        // ---------- 横屏（宽 > 高）时回到桌面版首页 ----------
+        // 条件与 index.html 的竖屏跳转互斥，不会形成循环
+        function backToLandscape() {
+            var isLandscape = window.matchMedia('(orientation: landscape)').matches;
+            if (isLandscape && window.innerWidth > window.innerHeight) {
+                window.location.replace('index.html');
+            }
+        }
+        window.addEventListener('orientationchange', function () {
+            // 旋转后再判断，给浏览器更新尺寸留一点时间
+            setTimeout(backToLandscape, 250);
+        });
+    </script>
+</body>
+</html>

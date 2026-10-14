@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>协会风采 · 长理理工杯</title>
+    <style>
+        /* 引入本地字体 */
+        @font-face {
+            font-family: "MyFont";
+            src: url("../zh-cn.woff2") format("woff2"),
+                 url("../zh-cn-subset.ttf") format("truetype");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: "MyFont", "Microsoft YaHei", Arial, sans-serif;
+            background: #f9fbfd;
+        }
+
+        /* ================= 关键帧动画 ================= */
+
+        /* 主图缓慢放大淡入 */
+        @keyframes imageFadeIn {
+            from { transform: scale(1.08) translateZ(0); opacity: 0; }
+            to   { transform: scale(1)    translateZ(0); opacity: 1; }
+        }
+
+        /* 主图文字：上浮淡入 */
+        @keyframes titleUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* 内容块滑入 */
+        @keyframes slideUp {
+            from { transform: translateY(40px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* 图片错落淡入 */
+        @keyframes fadeUp {
+            from { transform: translateY(24px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* 顶部标题栏：从上方滑入 */
+        @keyframes barSlideDown {
+            from { transform: translateY(-100%); }
+            to   { transform: translateY(0); }
+        }
+
+        /* ================= 顶部主图（占 60% 高度） ================= */
+
+        .hero {
+            position: relative;
+            height: 60vh;
+            width: 100%;
+            overflow: hidden;               /* 裁剪放大溢出的部分 */
+            display: flex;
+            align-items: center;            /* 文字垂直居中 */
+            justify-content: center;        /* 文字水平居中 */
+        }
+
+        .hero-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;              /* 铺满整个区域 */
+            object-position: center;
+            transform-origin: center center;
+            backface-visibility: hidden;
+            will-change: transform, opacity;
+            animation: imageFadeIn 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        /* 主图压暗遮罩，保证中间文字清晰可读 */
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            pointer-events: none;
+        }
+
+        /* 图框正中央的“长理理工杯”文字 */
+        .hero-title {
+            position: relative;
+            z-index: 2;
+            color: #ffffff;
+            font-size: 4.2rem;
+            font-weight: bold;
+            letter-spacing: 0.18em;
+            text-indent: 0.18em;            /* 抵消尾部字距，使文字真正居中 */
+            text-shadow: 0 4px 18px rgba(0, 0, 0, 0.65);
+            padding: 10px 28px;
+            border-top: 3px solid rgba(255, 255, 255, 0.9);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.9);
+            animation: titleUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+        }
+
+        /* ================= 顶部固定标题栏（主图滚出视野后显示） ================= */
+
+        /* 默认隐藏，向上移出屏幕 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;                    /* 宽度全占满 */
+            height: 20vh;                   /* 占 0.2 的高度 */
+            background: #287ee3;            /* 无文字位置由已有蓝色填充 */
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            transform: translateY(-100%);   /* 初始隐藏在屏幕上方 */
+            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+        }
+
+        /* 主图不可见时：滑入显示 */
+        .top-bar.show {
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .top-bar .top-bar-text {
+            font-size: 2.6rem;
+            font-weight: bold;
+            letter-spacing: 0.16em;
+            text-indent: 0.16em;            /* 抵消尾部字距，使文字居中 */
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        }
+
+        /* ================= 内容区（占 40% 高度） ================= */
+
+        .content {
+            min-height: 40vh;
+            padding: 36px 48px 56px;
+            animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+        }
+
+        /* 左下方：02.jpg + 右侧配文 */
+        .feature {
+            display: flex;
+            align-items: center;            /* 图片与文字在同一水平行 */
+            gap: 32px;
+            margin-bottom: 48px;
+        }
+
+        .feature-img {
+            width: 42%;                     /* 图片居左，占约 42% 宽 */
+            flex-shrink: 0;
+        }
+
+        .feature-img img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            display: block;
+            border: 1px solid #d0d7de;
+            background: #ffffff;
+        }
+
+        /* 右侧配文 */
+        .feature-text {
+            flex: 1;
+        }
+
+        .feature-text p {
+            font-size: 1.35rem;
+            line-height: 2;
+            color: #333;
+            text-align: justify;
+            padding-left: 20px;
+            border-left: 5px solid #287ee3;
+        }
+
+        /* ================= 剩余图片：两两一组 ================= */
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #287ee3;
+            margin-bottom: 24px;
+            padding-left: 14px;
+            border-left: 6px solid #287ee3;
+        }
+
+        /* 「协会的运营团队」专属：字号更大、上下间距更宽 */
+        .section-title.team-title {
+            font-size: 2.2rem;
+            margin-top: 72px;          /* 与上方内容拉开距离 */
+            margin-bottom: 40px;       /* 与下方图片拉开距离 */
+            padding-left: 18px;
+            border-left-width: 8px;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;   /* 每行两张 */
+            gap: 20px;
+        }
+
+        .gallery figure {
+            width: 100%;
+            animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .gallery img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+            border: 1px solid #d0d7de;
+            background: #ffffff;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .gallery img:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 26px rgba(40, 126, 227, 0.28);
+        }
+
+        /* 左上角返回按钮 */
+        .back-btn {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            z-index: 30;                    /* 位于顶部标题栏之上 */
+            padding: 10px 20px;
+            font-size: 1rem;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0.42);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.25s ease, padding-left 0.25s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.65);
+            padding-left: 26px;
+        }
+
+        /* 小屏适配：窄屏时内容纵向堆叠 */
+        @media (max-width: 720px) {
+            .hero-title { font-size: 2.4rem; }
+            .top-bar .top-bar-text { font-size: 1.6rem; }
+            .content { padding: 24px 20px 40px; }
+            .feature { flex-direction: column; }
+            .feature-img { width: 100%; }
+            .gallery { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 返回按钮 -->
+    <div class="back-btn" onclick="window.location.href='../index.html'">&larr; 返回首页</div>
+
+    <!-- 顶部固定标题栏：主图滚出视野后显示 -->
+    <div class="top-bar" id="topBar">
+        <span class="top-bar-text">长理理工杯风采</span>
+    </div>
+
+    <!-- 顶部主图：占 60% 高度，图框正中央显示“长理理工杯” -->
+    <div class="hero">
+        <img class="hero-img" src="thumbs/01.jpg" alt="理工杯主题图">
+        <div class="hero-title">长理理工杯</div>
+    </div>
+
+    <!-- 内容区 -->
+    <div class="content">
+        <!-- 左下方 02.jpg + 右侧配文 -->
+        <div class="feature">
+            <div class="feature-img">
+                <img src="thumbs/02.jpg" alt="理工杯现场">
+            </div>
+            <div class="feature-text">
+                <p>理工杯是一年一度的校级羽毛球竞赛，各个学院或学院联队均会参赛，一决高下</p>
+            </div>
+        </div>
+
+        <!-- 剩余图片：两两一组显示 -->
+        <div class="section-title" id="sectionHighlights">精彩瞬间</div>
+        <div class="gallery" id="gallery"></div>
+
+        <!-- 协会的运营团队：两两一组显示 -->
+        <div class="section-title team-title" id="sectionTeam">协会的运营团队</div>
+        <div class="gallery" id="teamGallery"></div>
+    </div>
+
+    <script>
+        // 剩余图片（来自 Senrio 目录，已生成缩略图），两两一组展示
+        var galleryImages = [
+            'thumbs/D1_1.jpg',
+            'thumbs/D1_2.jpg',
+            'thumbs/D1_4.jpg',
+            'thumbs/D1_5.jpg',
+            'thumbs/D1_6.jpg',
+            'thumbs/D2_1.jpg',
+            'thumbs/D2_9.jpg',
+            'thumbs/D2_10.jpg',
+            'thumbs/D2_11.jpg',
+            'thumbs/D2_12.jpg',
+            'thumbs/D2_13.jpg',
+            'thumbs/D2_14.jpg',
+            'thumbs/D2_15.jpg',
+            'thumbs/D_16.jpg'
+        ];
+
+        (function buildGallery() {
+            var gallery = document.getElementById('gallery');
+            var html = '';
+            galleryImages.forEach(function (src, i) {
+                // 依次错落延迟，让图片逐个出现
+                var delay = (0.5 + i * 0.06).toFixed(2);
+                html += '<figure style="animation-delay:' + delay + 's">' +
+                            '<img src="' + src + '" alt="理工杯精彩瞬间">' +
+                        '</figure>';
+            });
+            gallery.innerHTML = html;
+        })();
+
+        // 协会的运营团队图片（Senrio 目录中以 P 开头的图片，已生成缩略图），两两一组展示
+        var teamImages = [
+            'thumbs/P_1.jpg',
+            'thumbs/P_2.jpg',
+            'thumbs/P_3.jpg',
+            'thumbs/P_4.jpg',
+            'thumbs/P_5.jpg',
+            'thumbs/P_6.jpg',
+            'thumbs/P_7.jpg',
+            'thumbs/P_8.jpg'
+        ];
+
+        (function buildTeamGallery() {
+            var gallery = document.getElementById('teamGallery');
+            var html = '';
+            teamImages.forEach(function (src, i) {
+                var delay = (0.5 + i * 0.06).toFixed(2);
+                html += '<figure style="animation-delay:' + delay + 's">' +
+                            '<img src="' + src + '" alt="协会运营团队">' +
+                        '</figure>';
+            });
+            gallery.innerHTML = html;
+        })();
+
+        // 主图滚出视野后，显示顶部固定标题栏；并随滚动到的区块切换标题文字
+        (function initScrollTopBar() {
+            var hero = document.querySelector('.hero');
+            var topBar = document.getElementById('topBar');
+            var topBarText = topBar ? topBar.querySelector('.top-bar-text') : null;
+            var sectionTeam = document.getElementById('sectionTeam');
+
+            var DEFAULT_TITLE = '长理理工杯风采';
+
+            function updateTopBar() {
+                if (!hero || !topBar) return;
+
+                // 主图完全滚出视野（底部 <= 0）时显示标题栏
+                var heroBottom = hero.getBoundingClientRect().bottom;
+                if (heroBottom <= 0) {
+                    topBar.classList.add('show');
+                } else {
+                    topBar.classList.remove('show');
+                }
+
+                // 标题文字：滚动到“协会的运营团队”区块时切换为该标题
+                if (topBarText) {
+                    var title = DEFAULT_TITLE;
+                    if (sectionTeam) {
+                        // 以该区块标题到达视口上部（标题栏下沿附近）为切换点
+                        var rect = sectionTeam.getBoundingClientRect();
+                        var switchLine = topBar.offsetHeight;   // 标题栏高度作为判定线
+                        if (rect.top <= switchLine) {
+                            title = '协会的运营团队';
+                        }
+                    }
+                    if (topBarText.textContent !== title) {
+                        topBarText.textContent = title;
+                    }
+                }
+            }
+
+            window.addEventListener('scroll', updateTopBar, { passive: true });
+            window.addEventListener('resize', updateTopBar);
+            updateTopBar();
+        })();
+    </script>
+</body>
+</html>
