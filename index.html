@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报名协会运营</title>
+    <style>
+        /* 引入本地字体 */
+        @font-face {
+            font-family: "MyFont";
+            src: url("zh-cn.ttf") format("truetype");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;               /* 禁止页面滚动，避免出现滚动条 */
+            font-family: "MyFont", "Microsoft YaHei", Arial, sans-serif;
+        }
+
+        /* ================= 关键帧动画 ================= */
+
+        /* 上层图片：缓慢放大淡入（走 GPU 合成，避免卡顿） */
+        @keyframes imageFadeIn {
+            from { transform: scale(1.08) translateZ(0); opacity: 0; }
+            to   { transform: scale(1)    translateZ(0); opacity: 1; }
+        }
+
+        /* 下层整体从下方滑入 */
+        @keyframes slideUp {
+            from { transform: translateY(60px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* 选项框错落出现：淡入 + 从右侧滑入 */
+        @keyframes boxIn {
+            from { transform: translateX(40px); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+
+        /* 右侧内容淡入 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        /* 右侧内容切换时淡入上滑 */
+        @keyframes fadeUp {
+            from { transform: translateY(16px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* 右侧内容切换出去时淡出 */
+        @keyframes fadeOut {
+            from { transform: translateY(0);    opacity: 1; }
+            to   { transform: translateY(-16px); opacity: 0; }
+        }
+
+        /* 页面容器：占满整个视口高度 */
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* 上层：占 60% 高度，仅作为裁剪容器 */
+        .top-layer {
+            height: 60%;
+            overflow: hidden;               /* 裁剪内层放大溢出的部分 */
+        }
+
+        /* 上层内层图片：承载背景图并做动画，避免整层重采样 */
+        .top-image {
+            width: 100%;
+            height: 100%;
+            background-image: url("MainPic.png");
+            background-size: cover;         /* 铺满整个区域 */
+            background-position: center;
+            background-repeat: no-repeat;
+            transform-origin: center center;
+            backface-visibility: hidden;    /* 强制 GPU 合成 */
+            will-change: transform, opacity;
+            animation: imageFadeIn 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        /* 下层：占 40% 高度，横向排列 */
+        .bottom-layer {
+            height: 40%;
+            background: #287ee3;            /* 空白区域填充色 */
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between; /* 组件贴左，选项框贴右 */
+            padding: 20px;
+            gap: 20px;
+            animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+        }
+
+        /* 选项框区域：占 70% 宽度，整体靠右 */
+        .options-area {
+            width: 70%;
+            height: 100%;
+            display: flex;
+            flex-direction: row-reverse;   /* 从右到左排列 */
+            align-items: center;
+            justify-content: flex-start;   /* reverse 下 flex-start 即靠右 */
+            gap: 20px;
+        }
+
+        /* 三个选项框（直角）：高度与预览组件一致 */
+        .option-box {
+            flex: 1;
+            height: 100%;
+            background: #ffffff;
+            border: 2px solid #d0d7de;
+            border-radius: 0;               /* 直角框 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 1.6rem;              /* 字号调大 */
+            color: #333;
+            user-select: none;
+            /* 错落出现动画，延迟由 JS 设置 */
+            animation: boxIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .option-box:hover {
+            border-color: #4facfe;
+            box-shadow: 0 6px 18px rgba(79, 172, 254, 0.3);
+        }
+
+        .option-box.selected {
+            border-color: #4facfe;
+            background: #e8f6ff;
+            color: #0077c2;
+            font-weight: bold;
+        }
+
+        /* ---------- 右侧预览组件：占 25% 宽度 ---------- */
+        .preview {
+            width: 25%;
+            height: 100%;
+            border: 2px solid #287ee3;      /* 未选中时与下方背景同色 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.3rem;              /* 字号调大 */
+            background: #287ee3;            /* 与下方背景色同色 */
+            transition: background 0.3s ease, border-color 0.3s ease;
+            overflow: hidden;
+            position: relative;
+            animation: fadeIn 0.9s ease 0.4s both;
+        }
+
+        /* 预览内容容器：切换时重播动画 */
+        .preview-inner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .preview-inner.animate-in {
+            animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        /* 切换出去时的淡出动画 */
+        .preview-inner.animate-out {
+            animation: fadeOut 0.35s cubic-bezier(0.55, 0, 1, 0.45) both;
+        }
+
+        /* 部门名称列表（协会介绍） */
+        .dept-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* 协会风采：四张小图网格 */
+        .intro-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 6px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .intro-grid img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* 协会会员注册：介绍性文字 */
+        .register-intro {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .register-intro p {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 上层区域：显示 MainPic.png -->
+        <div class="top-layer">
+            <div class="top-image"></div>
+        </div>
+
+        <!-- 下层区域 -->
+        <div class="bottom-layer">
+            <!-- 选项框区域：占 70% 宽度，从右到左排列 -->
+            <div class="options-area">
+
+
+                <!-- 报名协会运营：点击跳转报名二级页面 -->
+                <div class="option-box" data-role="register" onclick="goToRegister(this)">报名协会运营</div>
+
+                <!-- 协会风采：点击跳转二级页面（长理理工杯） -->
+                <div class="option-box" data-role="style" onclick="goToStyle(this)">协会风采</div>
+
+                <!-- 协会介绍：点击跳转二级页面 -->
+                <div class="option-box" data-role="intro" onclick="goToIntro(this)">协会介绍</div>
+            </div>
+
+            <!-- 右侧预览组件 -->
+            <div class="preview" id="preview"></div>
+        </div>
+    </div>
+
+    <script>
+        var boxes = document.querySelectorAll('.option-box');
+        var previewEl = document.getElementById('preview');
+        var BG_COLOR = '#287ee3';           // 与下方区域背景同色
+
+        // 协会风采使用的四张缩略图
+        var introImages = [
+            'Intro/thumbs/01.jpg',
+            'Intro/thumbs/02.jpg',
+            'Intro/thumbs/03.jpg',
+            'Intro/thumbs/IMG_20260602_183137.jpg'
+        ];
+
+        // 给选项框设置错落的出现延迟
+        boxes.forEach(function (box, i) {
+            box.style.animationDelay = (0.3 + i * 0.12) + 's';
+        });
+
+        // 重播预览内容的入场动画
+        function replayAnimation(el) {
+            el.classList.remove('animate-in');
+            void el.offsetWidth;   // 强制重排，使动画可重播
+            el.classList.add('animate-in');
+        }
+
+        // 构建"协会介绍"内容 HTML：从上到下四个部门名称
+        function buildIntroHTML() {
+            return '<div class="preview-inner">' +
+                       '<div class="dept-list">' +
+                           '<span>裁判队</span>' +
+                           '<span>协会办公室</span>' +
+                           '<span>协会宣传组</span>' +
+                           '<span>协会活动组</span>' +
+                       '</div>' +
+                   '</div>';
+        }
+
+        // 构建"协会风采"内容 HTML：四张缩略图一起展示
+        function buildStyleHTML() {
+            var html = '<div class="preview-inner"><div class="intro-grid">';
+            introImages.forEach(function (src) {
+                html += '<img src="' + src + '" alt="">';
+            });
+            html += '</div></div>';
+            return html;
+        }
+
+        // 构建"报名协会运营"内容 HTML：介绍性文字
+        function buildRegisterHTML() {
+            return '<div class="preview-inner">' +
+                       '<div class="register-intro">' +
+                           '<p>报名加入协会运营</p>' +
+                           '<p>请下载并填写报名表</p>' +
+                       '</div>' +
+                   '</div>';
+        }
+
+        // 根据组件 role 构建对应内容 HTML；无内容返回空字符串
+        function buildPreviewHTML(box) {
+            if (!box) return '';
+            var role = box.getAttribute('data-role');
+            if (role === 'intro')    return buildIntroHTML();
+            if (role === 'style')    return buildStyleHTML();
+            if (role === 'register') return buildRegisterHTML();
+            return '';
+        }
+
+        // 带淡出 / 淡入的预览切换
+        var OUT_MS = 350;   // 与 .animate-out 动画时长保持一致
+        var switchToken = 0;   // 防止快速切换时回调错乱
+
+        function switchPreview(box) {
+            var token = ++switchToken;
+            var current = previewEl.querySelector('.preview-inner');
+            var nextHTML = buildPreviewHTML(box);
+
+            // 先淡出当前内容，再替换为新内容并淡入
+            if (current) {
+                current.classList.remove('animate-in');
+                current.classList.add('animate-out');
+                setTimeout(function () {
+                    if (token !== switchToken) return;   // 已有更新的切换，忽略本次
+                    previewEl.innerHTML = nextHTML;
+                    var next = previewEl.querySelector('.preview-inner');
+                    if (next) replayAnimation(next);
+                }, OUT_MS);
+            } else {
+                previewEl.innerHTML = nextHTML;
+                var next = previewEl.querySelector('.preview-inner');
+                if (next) replayAnimation(next);
+            }
+        }
+
+        // 重置右侧组件为"未选中"状态（带淡出）
+        function resetPreview() {
+            var current = previewEl.querySelector('.preview-inner');
+            var token = ++switchToken;
+            if (current) {
+                current.classList.remove('animate-in');
+                current.classList.add('animate-out');
+                setTimeout(function () {
+                    if (token !== switchToken) return;
+                    previewEl.innerHTML = '';
+                }, OUT_MS);
+            } else {
+                previewEl.innerHTML = '';
+            }
+        }
+
+        // ---------- 选中逻辑 ----------
+        function setSelected(box) {
+            boxes.forEach(function (b) { b.classList.remove('selected'); });
+            if (box) box.classList.add('selected');
+        }
+
+        function selectBox(el) {
+            setSelected(el);
+            switchPreview(el);
+        }
+
+        // 跳转到"协会介绍"二级页面
+        function goToIntro(el) {
+            setSelected(el);
+            window.location.href = 'intro.html';
+        }
+
+        // 跳转到"协会风采"二级页面（长理理工杯）
+        function goToStyle(el) {
+            setSelected(el);
+            window.location.href = 'Senrio/highlights.html';
+        }
+
+        // 跳转到"报名协会运营"二级页面
+        function goToRegister(el) {
+            setSelected(el);
+            window.location.href = 'Regesiter/register.html';
+        }
+
+        // ---------- 鼠标悬停交互 ----------
+        boxes.forEach(function (box) {
+            box.addEventListener('mouseenter', function () {
+                setSelected(box);
+                switchPreview(box);
+            });
+            box.addEventListener('mouseleave', function () {
+                if (!autoRunning) {
+                    setSelected(null);
+                    resetPreview();
+                }
+            });
+        });
+
+        // ---------- 自动滚动机制 ----------
+        // DOM 为 row-reverse，boxes 顺序：[协会会员注册, 协会风采, 协会介绍]
+        // 视觉从左到右依次为 index 2, 1, 0
+        var autoOrder = [2, 1, 0];
+        var autoStep = 0;
+        var autoRunning = true;
+        var HOLD_MS = 3000;      // 每个组件选中停留 3 秒
+        var GAP_MS = 2000;       // 中间不选中 2 秒
+        var autoTimeout = null;
+
+        function autoLoop() {
+            if (!autoRunning) return;
+            // 1) 选中并停留 3 秒
+            var box = boxes[autoOrder[autoStep]];
+            setSelected(box);
+            switchPreview(box);
+
+            autoTimeout = setTimeout(function () {
+                if (!autoRunning) return;
+                // 2) 全部取消选中 2 秒
+                setSelected(null);
+                resetPreview();
+
+                autoTimeout = setTimeout(function () {
+                    if (!autoRunning) return;
+                    autoStep = (autoStep + 1) % autoOrder.length;
+                    autoLoop();
+                }, GAP_MS);
+            }, HOLD_MS);
+        }
+
+        // 鼠标进入选项框区域时暂停自动滚动，离开后恢复
+        document.querySelector('.options-area').addEventListener('mouseenter', function () {
+            autoRunning = false;
+            if (autoTimeout) clearTimeout(autoTimeout);
+        });
+        document.querySelector('.options-area').addEventListener('mouseleave', function () {
+            autoRunning = true;
+            setSelected(null);
+            resetPreview();
+            autoStep = 0;
+            autoLoop();
+        });
+
+        // 启动自动滚动
+        autoLoop();
+    </script>
+</body>
+</html>
