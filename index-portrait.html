@@ -46,6 +46,7 @@
 
         /* ================= 页面容器 ================= */
         .container {
+            position: relative;             /* 供报名按钮绝对定位参照 */
             display: flex;
             flex-direction: column;
             height: 100vh;
@@ -181,6 +182,109 @@
             .panel { padding: 16px; }
             .option-btn { height: 52px; font-size: 1.2rem; }
         }
+
+        /* ================= 报名按钮（分隔线正中）与弹窗 ================= */
+
+        /* 报名按钮：绝对定位于背景与下半区分隔线正中（50% 处），底边贴线并略上移 */
+        .signup-btn {
+            position: absolute;
+            left: 50%;
+            top: calc(50% - 12px);          /* 与 .hero 50% 分界对齐，再上移一点 */
+            transform: translate(-50%, -100%);  /* 底边贴住分隔线 */
+            z-index: 20;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 180px;
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: inherit;
+            color: #287ee3;
+            background: #ffffff;
+            border: 2px solid #287ee3;
+            border-radius: 0;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+        }
+
+        .signup-btn:active {
+            background: #287ee3;
+            color: #ffffff;
+        }
+
+        /* 弹窗遮罩 */
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.55);
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .modal-mask.open { display: flex; opacity: 1; }
+
+        .modal {
+            width: 100%;
+            max-width: 420px;
+            background: #ffffff;
+            border: 2px solid #287ee3;
+            border-radius: 0;
+            padding: 26px 22px 22px;
+            text-align: center;
+            transform: translateY(16px);
+            transition: transform 0.25s ease;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        }
+        .modal-mask.open .modal { transform: translateY(0); }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #1f3a8a;
+            margin-bottom: 14px;
+            letter-spacing: 0.06em;
+        }
+        .modal-text {
+            font-size: 1.05rem;
+            color: #333;
+            line-height: 1.75;
+            margin-bottom: 20px;
+        }
+        .modal-download {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 15px 22px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            font-family: inherit;
+            color: #ffffff;
+            background: #287ee3;
+            border: 2px solid #287ee3;
+            border-radius: 0;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .modal-close {
+            margin-top: 14px;
+            font-size: 0.92rem;
+            color: #888;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -308,7 +412,7 @@
         <div class="panel">
             <div class="btn-list">
                 <div class="option-btn" data-role="register" style="animation-delay:0.15s"
-                     onclick="onBtn('register', this)">报名协会运营</div>
+                     onclick="onBtn('register', this)">协会动态</div>
                 <div class="option-btn" data-role="style" style="animation-delay:0.25s"
                      onclick="onBtn('style', this)">协会风采</div>
                 <div class="option-btn" data-role="intro" style="animation-delay:0.35s"
@@ -316,6 +420,22 @@
             </div>
             <div class="info-box">
                 <div class="info-inner" id="info"></div>
+            </div>
+        </div>
+
+        <!-- 报名按钮：位于背景与下半区分隔线正中 -->
+        <button class="signup-btn" type="button" onclick="openSignupModal()">干事报名</button>
+
+        <!-- 报名弹窗 -->
+        <div class="modal-mask" id="signup-modal" onclick="if(event.target===this)closeSignupModal()">
+            <div class="modal">
+                <div class="modal-title">干事报名</div>
+                <div class="modal-text">下载报名表以向协会运营组织报名，我们期待你的到来！</div>
+                <a class="modal-download" href="干事报名表.docx" download>
+                    <span>&#128229;</span>
+                    <span>下载报名表</span>
+                </a>
+                <button class="modal-close" type="button" onclick="closeSignupModal()">关闭</button>
             </div>
         </div>
     </div>
@@ -329,8 +449,8 @@
         var INFO = {
             register:
                 '<div class="info-lines">' +
-                    '<p>报名加入协会运营</p>' +
-                    '<p>请下载并填写报名表</p>' +
+                    '<p>协会最新动态</p>' +
+                    '<p>点击查看详讯</p>' +
                 '</div>',
             style:
                 '<div class="info-slogan">我们的风采</div>',
@@ -345,7 +465,7 @@
 
         // 跳转目标
         var LINKS = {
-            register: 'Regesiter/register.html',
+            register: 'News/news.html',
             style:    'Senrio/highlights.html',
             intro:    'intro.html'
         };
@@ -429,6 +549,19 @@
 
         // 启动自动轮播
         autoLoop();
+
+        // ---------- 干事报名弹窗 ----------
+        function openSignupModal() {
+            var modal = document.getElementById('signup-modal');
+            if (modal) modal.classList.add('open');
+        }
+        function closeSignupModal() {
+            var modal = document.getElementById('signup-modal');
+            if (modal) modal.classList.remove('open');
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeSignupModal();
+        });
 
         // ---------- 横屏（宽 > 高）时回到桌面版首页 ----------
         // 条件与 index.html 的竖屏跳转互斥，不会形成循环

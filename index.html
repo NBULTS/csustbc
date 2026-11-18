@@ -69,6 +69,7 @@
 
         /* 页面容器：占满整个视口高度，使用动态视口单位适配移动端地址栏 */
         .container {
+            position: relative;             /* 供报名按钮绝对定位参照 */
             display: flex;
             flex-direction: column;
             height: 100vh;
@@ -358,6 +359,157 @@
             .option-box { font-size: 0.9rem; }
             .preview { font-size: 0.9rem; }
         }
+
+        /* ================= 报名按钮（分隔线正中）与弹窗 ================= */
+
+        /* 报名按钮：绝对定位于背景与功能区分隔线正中，底边贴线并略上移 */
+        .signup-btn {
+            position: absolute;
+            left: 50%;
+            top: calc(60% - 14px);          /* 与 .top-layer 60% 分界对齐，再上移一点 */
+            transform: translate(-50%, -100%);  /* 底边贴住分隔线 */
+            z-index: 20;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: 220px;
+            padding: 14px 34px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            font-family: inherit;
+            color: #287ee3;
+            background: #ffffff;
+            border: 2px solid #287ee3;
+            border-radius: 0;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+        }
+
+        .signup-btn:hover {
+            background: #287ee3;
+            color: #ffffff;
+            transform: translate(-50%, calc(-100% - 4px));  /* 底边贴线基础上再上浮 */
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        /* 弹窗遮罩 */
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;                 /* 默认隐藏 */
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.55);
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-mask.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* 弹窗主体：直角风格 */
+        .modal {
+            width: 100%;
+            max-width: 440px;
+            background: #ffffff;
+            border: 2px solid #287ee3;
+            border-radius: 0;
+            padding: 30px 28px 26px;
+            text-align: center;
+            transform: translateY(16px);
+            transition: transform 0.25s ease;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        }
+
+        .modal-mask.open .modal {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #1f3a8a;
+            margin-bottom: 16px;
+            letter-spacing: 0.06em;
+        }
+
+        .modal-text {
+            font-size: 1.1rem;
+            color: #333;
+            line-height: 1.75;
+            margin-bottom: 24px;
+        }
+
+        /* 弹窗内下载按钮 */
+        .modal-download {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: inherit;
+            color: #ffffff;
+            background: #287ee3;
+            border: 2px solid #287ee3;
+            border-radius: 0;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .modal-download:hover {
+            background: #1f6bd0;
+            transform: translateY(-3px);
+        }
+
+        /* 弹窗关闭按钮 */
+        .modal-close {
+            margin-top: 16px;
+            font-size: 0.95rem;
+            color: #888;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            text-decoration: underline;
+        }
+
+        /* 触屏：去掉位移 hover */
+        @media (hover: none) {
+            .signup-btn:hover { transform: translate(-50%, -100%); }
+            .modal-download:hover { transform: none; }
+        }
+
+        /* 窄屏：报名按钮略缩，位置随布局微调（底边始终贴分隔线） */
+        @media (max-width: 820px) {
+            .signup-btn {
+                top: calc(46% - 12px);  /* 与窄屏 .top-layer 46% 对齐 */
+                padding: 12px 26px;
+                font-size: 1.1rem;
+                min-width: 180px;
+            }
+        }
+        @media (max-width: 480px) {
+            .signup-btn {
+                top: calc(42% - 10px);  /* 与竖屏 .top-layer 42% 对齐 */
+                padding: 11px 22px;
+                font-size: 1rem;
+                min-width: 160px;
+            }
+        }
+        @media (max-height: 480px) {
+            .signup-btn { top: calc(40% - 10px); font-size: 0.95rem; padding: 10px 20px; }
+        }
     </style>
 </head>
 <body>
@@ -533,8 +685,8 @@
             <div class="options-area">
 
 
-                <!-- 报名协会运营：点击跳转报名二级页面 -->
-                <div class="option-box" data-role="register" onclick="goToRegister(this)">报名协会运营</div>
+                <!-- 协会动态：点击跳转动态二级页面 -->
+                <div class="option-box" data-role="register" onclick="goToRegister(this)">协会动态</div>
 
                 <!-- 协会风采：点击跳转二级页面（长理理工杯） -->
                 <div class="option-box" data-role="style" onclick="goToStyle(this)">协会风采</div>
@@ -545,6 +697,22 @@
 
             <!-- 右侧预览组件 -->
             <div class="preview" id="preview"></div>
+        </div>
+
+        <!-- 报名按钮：位于背景与功能区分隔线正中 -->
+        <button class="signup-btn" type="button" onclick="openSignupModal()">干事报名</button>
+
+        <!-- 报名弹窗 -->
+        <div class="modal-mask" id="signup-modal" onclick="if(event.target===this)closeSignupModal()">
+            <div class="modal">
+                <div class="modal-title">干事报名</div>
+                <div class="modal-text">下载报名表以向协会运营组织报名，我们期待你的到来！</div>
+                <a class="modal-download" href="干事报名表.docx" download>
+                    <span>&#128229;</span>
+                    <span>下载报名表</span>
+                </a>
+                <button class="modal-close" type="button" onclick="closeSignupModal()">关闭</button>
+            </div>
         </div>
     </div>
 
@@ -595,12 +763,12 @@
             return html;
         }
 
-        // 构建"报名协会运营"内容 HTML：介绍性文字
+        // 构建"协会动态"内容 HTML：介绍性文字
         function buildRegisterHTML() {
             return '<div class="preview-inner">' +
                        '<div class="register-intro">' +
-                           '<p>报名加入协会运营</p>' +
-                           '<p>请下载并填写报名表</p>' +
+                           '<p>协会最新动态</p>' +
+                           '<p>点击查看详讯</p>' +
                        '</div>' +
                    '</div>';
         }
@@ -680,11 +848,25 @@
             window.location.href = 'Senrio/highlights.html';
         }
 
-        // 跳转到"报名协会运营"二级页面
+        // 跳转到"协会动态"二级页面
         function goToRegister(el) {
             setSelected(el);
-            window.location.href = 'Regesiter/register.html';
+            window.location.href = 'News/news.html';
         }
+
+        // ---------- 干事报名弹窗 ----------
+        function openSignupModal() {
+            var modal = document.getElementById('signup-modal');
+            if (modal) modal.classList.add('open');
+        }
+        function closeSignupModal() {
+            var modal = document.getElementById('signup-modal');
+            if (modal) modal.classList.remove('open');
+        }
+        // 按 Esc 关闭弹窗
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeSignupModal();
+        });
 
         // ---------- 鼠标悬停交互 ----------
         boxes.forEach(function (box) {
