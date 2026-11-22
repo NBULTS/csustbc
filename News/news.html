@@ -152,6 +152,92 @@
             line-height: 1.6;
         }
 
+        /* 可点开的动态（带图片）：整卡可点，提示可展开详情 */
+        .news-item.is-clickable {
+            cursor: pointer;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .news-item.is-clickable:hover {
+            border-color: #287ee3;
+            box-shadow: 0 6px 18px rgba(31, 58, 138, 0.16);
+        }
+
+        /* “查看图片”提示条 */
+        .news-item .news-more {
+            display: inline-block;
+            align-self: flex-start;
+            margin-top: 4px;
+            padding: 4px 12px;
+            font-size: 0.86rem;
+            font-weight: bold;
+            color: #287ee3;
+            border: 1px solid rgba(40, 126, 227, 0.45);
+            background: rgba(40, 126, 227, 0.07);
+            user-select: none;
+        }
+
+        /* 图片网格：默认收起，点开卡片才显示；一排两张 */
+        .news-item .news-gallery {
+            display: none;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 12px;
+            border-top: 1px dashed #c8d5e6;
+        }
+
+        .news-item.is-open .news-gallery {
+            display: grid;
+            animation: galleryIn 0.35s ease both;
+        }
+
+        @keyframes galleryIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 正方形格子，图片等比裁切填满，两张高度一致 */
+        .news-item .news-gallery img {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            background: #f2f5fa;
+            border: 1px solid #d0d7de;
+            cursor: zoom-in;
+        }
+
+        /* 图片区底部小提示 */
+        .news-item .news-tip {
+            grid-column: 1 / -1;
+            font-size: 0.82rem;
+            color: #8794a5;
+            text-align: right;
+        }
+
+        /* 点图片查看大图的遮罩层 */
+        .photo-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(10, 18, 40, 0.9);
+        }
+
+        .photo-mask.is-open { display: flex; }
+
+        .photo-mask img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+        }
+
         /* 重要提示（红字）：系统字体渲染 */
         .news-item .news-note {
             margin-top: 8px;
@@ -236,17 +322,30 @@
         </div>
     </div>
 
+    <!-- 点击图片查看大图的遮罩层 -->
+    <div class="photo-mask" id="photo-mask">
+        <img src="" alt="协会活动照片">
+    </div>
+
     <script>
         // ============================================================
         // 协会动态数据：后续新增动态，只需在此数组追加条目即可。
         // 字段：date（日期）、title（标题）、desc（简介）
+        // 可选：note（红字提示）、photos（图片路径列表，图片放在同目录 photos/ 下）
+        //       带 photos 的条目默认收起，点击卡片才展开图片
         // ============================================================
         var NEWS = [
             {
-                date: '2026-10-15',
-                title: '协会宣传网站已建成',
-                desc: '协会的宣传网站已建成，欢迎各位在 GitHub 仓库的 Issue 中提出问题，' +
-                      '或向 notebookunited@outlook.com 发送邮件反馈信息。'
+                date: '2026-11-22',
+                title: '协会纳新顺利进行！',
+                desc: '学生社团百团大战顺利举行，协会在百团大战现场顺利开展招新活动，' +
+                      '已吸纳超 200 个新成员，感谢大家的支持！',
+                photos: [
+                    'photos/01.jpg',
+                    'photos/02.jpg',
+                    'photos/03.jpg',
+                    'photos/04.jpg'
+                ]
             },
             {
                 date: '2026-11-18',
@@ -256,8 +355,33 @@
                 note: '注意，社团纳新仅限于百团大战期间，我们不会借招新的名义明示或暗示收取费用！' +
                       '下载的报名表请按照会员群内的通知，在规定的时间内向指定的接收方提交！' +
                       '协会站点只是一个信息站，不具有社团招新的信息上传功能！'
+            },
+            {
+                date: '2026-10-15',
+                title: '协会宣传网站已建成',
+                desc: '协会的宣传网站已建成，欢迎各位在 GitHub 仓库的 Issue 中提出问题，' +
+                      '或向 notebookunited@outlook.com 发送邮件反馈信息。'
             }
         ];
+
+        // 大图遮罩
+        var photoMask = document.getElementById('photo-mask');
+        var photoMaskImg = photoMask.querySelector('img');
+
+        function openPhoto(src) {
+            photoMaskImg.src = src;
+            photoMask.classList.add('is-open');
+        }
+
+        function closePhoto() {
+            photoMask.classList.remove('is-open');
+            photoMaskImg.src = '';
+        }
+
+        photoMask.addEventListener('click', closePhoto);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closePhoto();
+        });
 
         (function renderNews() {
             if (!NEWS.length) return;   // 无数据时保留占位提示
@@ -278,7 +402,33 @@
                 if (item.note) {
                     html += '<span class="news-note">' + item.note + '</span>';
                 }
+                // 带图片的动态：默认收起，点击卡片才展开
+                var hasPhotos = !!(item.photos && item.photos.length);
+                if (hasPhotos) {
+                    el.classList.add('is-clickable');
+                    html += '<span class="news-more">点击查看相关图片</span>' +
+                            '<div class="news-gallery">' +
+                            item.photos.map(function (src, idx) {
+                                return '<img src="' + src + '" alt="' + item.title +
+                                       ' 现场图片 ' + (idx + 1) + '" loading="lazy">';
+                            }).join('') +
+                            '<span class="news-tip">点击图片可查看大图</span>' +
+                            '</div>';
+                }
                 el.innerHTML = html;
+                if (hasPhotos) {
+                    el.addEventListener('click', function (e) {
+                        // 点图片先放大查看，其余区域切换展开/收起
+                        if (e.target && e.target.tagName === 'IMG') {
+                            e.stopPropagation();
+                            openPhoto(e.target.getAttribute('src'));
+                            return;
+                        }
+                        var opened = el.classList.toggle('is-open');
+                        var more = el.querySelector('.news-more');
+                        if (more) more.textContent = opened ? '收起图片' : '点击查看相关图片';
+                    });
+                }
                 listEl.appendChild(el);
             });
         })();
