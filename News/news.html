@@ -118,26 +118,49 @@
             animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
         }
 
-        /* 单条动态卡片：直角风格 */
+        /* 单条动态卡片：直角风格；左侧日期 + 右侧内容 两栏布局 */
         .news-item {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 22px 26px;
+            flex-direction: row;
+            align-items: stretch;           /* 让日期竖条与卡片等高 */
+            gap: 0;
+            padding: 0;                     /* 内边距移到右侧内容区 */
             background: #ffffff;
             border: 2px solid #d0d7de;
             border-radius: 0;
+            overflow: hidden;               /* 竖条裁切不外溢 */
             animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
             /* 新闻内容一律使用系统字体（不使用站内自建字体） */
             font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
                          "Heiti SC", "WenQuanYi Micro Hei", Arial, sans-serif;
         }
 
+        /* 左侧日期竖条：独立整条色带，与卡片等高，日期文字垂直居中 */
         .news-item .news-date {
-            font-size: 0.95rem;
-            color: #287ee3;
+            flex: 0 0 auto;
+            width: 104px;
+            display: flex;
+            align-items: center;            /* 垂直居中 */
+            justify-content: center;        /* 水平居中 */
+            padding: 12px 10px;
+            background: linear-gradient(180deg, #1f3a8a 0%, #287ee3 100%);
+            color: #ffffff;
+            font-size: 0.98rem;
             font-weight: bold;
             letter-spacing: 0.06em;
+            line-height: 1.5;
+            text-align: center;
+            word-break: break-all;          /* 窄条时日期可折行 */
+        }
+
+        /* 右侧内容区 */
+        .news-item .news-body {
+            flex: 1 1 auto;
+            min-width: 0;                   /* 允许内容换行，防止撑破 */
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 22px 26px;
         }
 
         .news-item .news-title {
@@ -274,7 +297,8 @@
             .topbar { padding: 12px 16px; }
             .hero-title { font-size: 1.35rem; }
             .entries { padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); gap: 14px; }
-            .news-item { padding: 18px 20px; }
+            .news-item .news-body { padding: 18px 20px; }
+            .news-item .news-date { width: 88px; font-size: 0.92rem; }
             .news-item .news-title { font-size: 1.2rem; }
         }
 
@@ -285,7 +309,8 @@
             .back-btn { padding: 7px 12px; font-size: 0.85rem; }
 
             .entries { padding: 12px 14px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); gap: 12px; }
-            .news-item { padding: 16px 16px; gap: 6px; }
+            .news-item .news-body { padding: 16px 16px; }
+            .news-item .news-date { width: 68px; font-size: 0.8rem; letter-spacing: 0; padding: 10px 6px; }
             .news-item .news-title { font-size: 1.1rem; }
             .news-item .news-desc { font-size: 0.92rem; }
             .news-item .news-note { font-size: 0.9rem; }
@@ -295,6 +320,7 @@
         @media (max-width: 360px) {
             .hero-title { font-size: 1.05rem; }
             .back-btn   { font-size: 0.78rem; padding: 6px 10px; }
+            .news-item .news-date { width: 58px; font-size: 0.74rem; padding: 8px 4px; }
             .news-item .news-title { font-size: 1.02rem; }
         }
 
@@ -303,7 +329,7 @@
             .topbar { padding: 8px 16px; }
             .hero-title { font-size: 1.1rem; }
             .entries { padding: 12px 20px; gap: 10px; }
-            .news-item { padding: 14px 18px; }
+            .news-item .news-body { padding: 14px 18px; }
         }
     </style>
 </head>
@@ -387,7 +413,7 @@
             if (!NEWS.length) return;   // 无数据时保留占位提示
             var listEl = document.getElementById('news-list');
             listEl.innerHTML = '';
-            // 按日期降序排列：最新的消息排在顶部（11-18 在上，10-15 在下）
+            // 按日期降序排列：最新的消息排在顶部
             var sorted = NEWS.slice().sort(function (a, b) {
                 return a.date > b.date ? -1 : (a.date < b.date ? 1 : 0);
             });
@@ -395,27 +421,33 @@
                 var el = document.createElement('div');
                 el.className = 'news-item';
                 el.style.animationDelay = (0.3 + i * 0.1) + 's';
-                var html =
-                    '<span class="news-date">' + item.date + '</span>' +
+
+                // 右侧内容区 HTML（标题、简介、红字提示、图片网格）
+                var bodyHtml =
                     '<span class="news-title">' + item.title + '</span>' +
                     '<span class="news-desc">' + item.desc + '</span>';
                 if (item.note) {
-                    html += '<span class="news-note">' + item.note + '</span>';
+                    bodyHtml += '<span class="news-note">' + item.note + '</span>';
                 }
                 // 带图片的动态：默认收起，点击卡片才展开
                 var hasPhotos = !!(item.photos && item.photos.length);
                 if (hasPhotos) {
                     el.classList.add('is-clickable');
-                    html += '<span class="news-more">点击查看相关图片</span>' +
-                            '<div class="news-gallery">' +
-                            item.photos.map(function (src, idx) {
-                                return '<img src="' + src + '" alt="' + item.title +
-                                       ' 现场图片 ' + (idx + 1) + '" loading="lazy">';
-                            }).join('') +
-                            '<span class="news-tip">点击图片可查看大图</span>' +
-                            '</div>';
+                    bodyHtml += '<span class="news-more">点击查看相关图片</span>' +
+                                '<div class="news-gallery">' +
+                                item.photos.map(function (src, idx) {
+                                    return '<img src="' + src + '" alt="' + item.title +
+                                           ' 现场图片 ' + (idx + 1) + '" loading="lazy">';
+                                }).join('') +
+                                '<span class="news-tip">点击图片可查看大图</span>' +
+                                '</div>';
                 }
-                el.innerHTML = html;
+
+                // 左侧日期 + 右侧内容 两栏结构
+                el.innerHTML =
+                    '<div class="news-date">' + item.date + '</div>' +
+                    '<div class="news-body">' + bodyHtml + '</div>';
+
                 if (hasPhotos) {
                     el.addEventListener('click', function (e) {
                         // 点图片先放大查看，其余区域切换展开/收起

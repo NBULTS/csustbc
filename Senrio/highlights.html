@@ -70,7 +70,7 @@
             justify-content: center;        /* 文字水平居中 */
         }
 
-        .hero-img {
+                .hero-img {
             position: absolute;
             inset: 0;
             width: 100%;
@@ -83,13 +83,39 @@
             animation: imageFadeIn 1s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
-        /* 主图压暗遮罩，保证中间文字清晰可读 */
+        /* 协会日常主图：叠在上层，默认隐藏，切换时淡入 */
+        .hero-img-daily {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0s linear 0.5s;
+        }
+
+                /* 切到协会日常时显示 RBAG */
+        .hero.is-daily .hero-img-daily {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.5s ease;
+        }
+
+        /* RBAG 为宽幅横图：切换后让主图区降为横幅比例，避免过度裁切 */
+        .hero.is-daily {
+            height: 42vh;
+        }
+
+
+                /* 主图压暗遮罩，保证中间文字清晰可读 */
         .hero::after {
             content: "";
             position: absolute;
             inset: 0;
             background: rgba(0, 0, 0, 0.35);
             pointer-events: none;
+            transition: background 0.35s ease;
+        }
+
+        /* 协会日常：RBAG 为宽幅横图，压暗程度略降以保留细节 */
+        .hero.is-daily::after {
+            background: rgba(0, 0, 0, 0.22);
         }
 
         /* 图框正中央的“长理理工杯”文字 */
@@ -103,9 +129,14 @@
             text-indent: 0.18em;            /* 抵消尾部字距，使文字真正居中 */
             text-shadow: 0 4px 18px rgba(0, 0, 0, 0.65);
             padding: 10px 28px;
-            border-top: 3px solid rgba(255, 255, 255, 0.9);
+                        border-top: 3px solid rgba(255, 255, 255, 0.9);
             border-bottom: 3px solid rgba(255, 255, 255, 0.9);
             animation: titleUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+        }
+
+        /* 协会日常模式下主图文字：宽幅图较小字号，避免压盖画面 */
+        .hero.is-daily .hero-title {
+            font-size: 3.2rem;
         }
 
         /* ================= 顶部固定标题栏（主图滚出视野后显示） ================= */
@@ -253,14 +284,69 @@
             padding-left: 26px;
         }
 
+                /* ================= 底部中央横栏（切换：活动 / 协会日常） ================= */
+
+        .bottom-tabs {
+            position: fixed;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);        /* 水平居中 */
+            z-index: 25;
+            display: flex;
+            width: min(520px, calc(100% - 40px));
+            background: #ffffff;
+            border: 2px solid #287ee3;
+            box-shadow: 0 8px 26px rgba(31, 58, 138, 0.28);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .bottom-tabs .tab-btn {
+            flex: 1 1 50%;
+            padding: 14px 10px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            text-align: center;
+            color: #287ee3;
+            background: #ffffff;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 0.08em;
+            transition: background 0.25s ease, color 0.25s ease;
+        }
+
+        /* 左栏右侧分隔线 */
+        .bottom-tabs .tab-btn:first-child {
+            border-right: 2px solid #287ee3;
+        }
+
+        .bottom-tabs .tab-btn:hover {
+            background: rgba(40, 126, 227, 0.08);
+        }
+
+        /* 选中态：蓝色实底、白字 */
+        .bottom-tabs .tab-btn.active {
+            background: #287ee3;
+            color: #ffffff;
+        }
+
+        /* 面板显隐：默认只显示“活动” */
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
         /* 小屏适配：窄屏时内容纵向堆叠 */
         @media (max-width: 720px) {
             .hero-title { font-size: 2.4rem; }
             .top-bar .top-bar-text { font-size: 1.6rem; }
-            .content { padding: 24px 20px 40px; }
+            .content { padding: 24px 20px 96px; }
             .feature { flex-direction: column; }
             .feature-img { width: 100%; }
-            .gallery { grid-template-columns: 1fr; }
+                        .gallery { grid-template-columns: 1fr; }
+            .bottom-tabs { bottom: 16px; }
+            .bottom-tabs .tab-btn { padding: 12px 8px; font-size: 0.98rem; }
+            .hero.is-daily { height: 32vh; }
+            .hero.is-daily .hero-title { font-size: 1.9rem; letter-spacing: 0.1em; text-indent: 0.1em; }
         }
     </style>
 </head>
@@ -273,32 +359,47 @@
         <span class="top-bar-text">长理理工杯风采</span>
     </div>
 
-    <!-- 顶部主图：占 60% 高度，图框正中央显示“长理理工杯” -->
-    <div class="hero">
-        <img class="hero-img" src="thumbs/01.jpg" alt="理工杯主题图">
-        <div class="hero-title">长理理工杯</div>
+        <!-- 顶部主图：占 60% 高度，图框正中央显示“长理理工杯” -->
+    <div class="hero" id="hero">
+        <img class="hero-img" id="heroImgActivity" src="thumbs/01.jpg" alt="理工杯主题图">
+        <img class="hero-img hero-img-daily" id="heroImgDaily" src="thumbs/RBAG.jpg" alt="协会日常主题图">
+        <div class="hero-title" id="heroTitle">长理理工杯</div>
     </div>
 
-    <!-- 内容区 -->
+
+        <!-- 内容区 -->
     <div class="content">
-        <!-- 左下方 02.jpg + 右侧配文 -->
-        <div class="feature">
-            <div class="feature-img">
-                <img src="thumbs/02.jpg" alt="理工杯现场">
+        <!-- 面板一：活动 -->
+        <div class="tab-panel active" id="panelActivity">
+            <!-- 左下方 02.jpg + 右侧配文 -->
+            <div class="feature">
+                <div class="feature-img">
+                    <img src="thumbs/02.jpg" alt="理工杯现场">
+                </div>
+                <div class="feature-text">
+                    <p>理工杯是一年一度的校级羽毛球竞赛，各个学院或学院联队均会参赛，一决高下</p>
+                </div>
             </div>
-            <div class="feature-text">
-                <p>理工杯是一年一度的校级羽毛球竞赛，各个学院或学院联队均会参赛，一决高下</p>
-            </div>
+
+            <!-- 剩余图片：两两一组显示 -->
+            <div class="section-title" id="sectionHighlights">精彩瞬间</div>
+            <div class="gallery" id="gallery"></div>
         </div>
 
-        <!-- 剩余图片：两两一组显示 -->
-        <div class="section-title" id="sectionHighlights">精彩瞬间</div>
-        <div class="gallery" id="gallery"></div>
-
-        <!-- 协会的运营团队：两两一组显示 -->
-        <div class="section-title team-title" id="sectionTeam">协会的运营团队</div>
-        <div class="gallery" id="teamGallery"></div>
+        <!-- 面板二：协会日常 -->
+        <div class="tab-panel" id="panelDaily">
+            <!-- 协会的运营团队：两两一组显示 -->
+            <div class="section-title team-title" id="sectionTeam">协会的运营团队</div>
+            <div class="gallery" id="teamGallery"></div>
+        </div>
     </div>
+
+    <!-- 底部中央横栏：左“活动” / 右“协会日常” -->
+    <div class="bottom-tabs" id="bottomTabs">
+        <button type="button" class="tab-btn active" data-target="panelActivity">活动</button>
+        <button type="button" class="tab-btn" data-target="panelDaily">协会日常</button>
+    </div>
+
 
     <script>
         // 剩余图片（来自 Senrio 目录，已生成缩略图），两两一组展示
@@ -356,14 +457,14 @@
             gallery.innerHTML = html;
         })();
 
-        // 主图滚出视野后，显示顶部固定标题栏；并随滚动到的区块切换标题文字
+                // 主图滚出视野后，显示顶部固定标题栏；标题文字随当前选中的面板切换
         (function initScrollTopBar() {
             var hero = document.querySelector('.hero');
             var topBar = document.getElementById('topBar');
             var topBarText = topBar ? topBar.querySelector('.top-bar-text') : null;
-            var sectionTeam = document.getElementById('sectionTeam');
 
             var DEFAULT_TITLE = '长理理工杯风采';
+            var DAILY_TITLE = '协会日常';
 
             function updateTopBar() {
                 if (!hero || !topBar) return;
@@ -376,17 +477,11 @@
                     topBar.classList.remove('show');
                 }
 
-                // 标题文字：滚动到“协会的运营团队”区块时切换为该标题
+                // 标题文字：选中“协会日常”面板时显示对应标题
                 if (topBarText) {
-                    var title = DEFAULT_TITLE;
-                    if (sectionTeam) {
-                        // 以该区块标题到达视口上部（标题栏下沿附近）为切换点
-                        var rect = sectionTeam.getBoundingClientRect();
-                        var switchLine = topBar.offsetHeight;   // 标题栏高度作为判定线
-                        if (rect.top <= switchLine) {
-                            title = '协会的运营团队';
-                        }
-                    }
+                    var dailyActive = document.getElementById('panelDaily')
+                        .classList.contains('active');
+                    var title = dailyActive ? DAILY_TITLE : DEFAULT_TITLE;
                     if (topBarText.textContent !== title) {
                         topBarText.textContent = title;
                     }
@@ -395,8 +490,58 @@
 
             window.addEventListener('scroll', updateTopBar, { passive: true });
             window.addEventListener('resize', updateTopBar);
+
+            // 供切换标签时调用
+            window.__updateTopBar = updateTopBar;
             updateTopBar();
         })();
+
+                // 底部横栏：切换“活动 / 协会日常”
+        (function initBottomTabs() {
+            var tabs = document.getElementById('bottomTabs');
+            if (!tabs) return;
+            var buttons = tabs.querySelectorAll('.tab-btn');
+            var hero = document.getElementById('hero');
+            var heroTitle = document.getElementById('heroTitle');
+
+            var HERO_TITLES = {
+                panelActivity: '长理理工杯',
+                panelDaily: '协会日常'
+            };
+
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var targetId = btn.getAttribute('data-target');
+                    if (btn.classList.contains('active')) return;   // 重复点击忽略
+
+                    // 按钮选中态
+                    buttons.forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+
+                    // 面板显隐
+                    document.querySelectorAll('.tab-panel').forEach(function (p) {
+                        p.classList.remove('active');
+                    });
+                    var target = document.getElementById(targetId);
+                    if (target) target.classList.add('active');
+
+                    // 顶部主图切换：协会日常 → RBAG
+                    var isDaily = (targetId === 'panelDaily');
+                    if (hero) hero.classList.toggle('is-daily', isDaily);
+                    if (heroTitle) heroTitle.textContent = HERO_TITLES[targetId] || HERO_TITLES.panelActivity;
+
+                    // 切换后滚回顶部，让主图与内容从头展示
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                    // 更新顶部标题栏文字
+                    if (typeof window.__updateTopBar === 'function') {
+                        window.__updateTopBar();
+                    }
+                });
+            });
+        })();
+
+
     </script>
 </body>
 </html>
