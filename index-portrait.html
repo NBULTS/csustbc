@@ -26,22 +26,82 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* ================= 关键帧动画 ================= */
-        @keyframes heroFade {
-            from { opacity: 0; transform: scale(1.04) translateZ(0); }
-            to   { opacity: 1; transform: scale(1)    translateZ(0); }
+        /* ================= 动效设计令牌 ================= */
+        :root {
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+            --stagger: 55ms;
         }
-        @keyframes cardIn {
-            from { transform: translateY(30px); opacity: 0; }
-            to   { transform: translateY(0);    opacity: 1; }
+
+        /* ================= 关键帧动画 =================
+           入场动画统一使用 backwards 填充，结束后回到基础样式，
+           保证触屏的 :active 反馈不被动画终态覆盖。 */
+
+        @keyframes heroReveal {
+            from { clip-path: inset(100% 0 0 0); }
+            to   { clip-path: inset(0 0 0 0); }
         }
-        @keyframes fadeUp {
-            from { transform: translateY(12px); opacity: 0; }
-            to   { transform: translateY(0);    opacity: 1; }
+        @keyframes heroSettle {
+            from { opacity: 0.2; transform: scale(1.05); }
+            to   { opacity: 1;   transform: scale(1); }
         }
-        @keyframes fadeOut {
-            from { transform: translateY(0);     opacity: 1; }
-            to   { transform: translateY(-12px); opacity: 0; }
+        @keyframes panelReveal {
+            from { clip-path: inset(0 0 100% 0); }
+            to   { clip-path: inset(0 0 0 0); }
+        }
+        @keyframes tileIn {
+            from { opacity: 0; transform: translateY(24px); clip-path: inset(100% 0 0 0); }
+            to   { opacity: 1; transform: translateY(0);    clip-path: inset(0 0 0 0); }
+        }
+        @keyframes contentIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes rowIn {
+            from { opacity: 0; transform: translateX(-12px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes charIn {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes emblemIn {
+            from { opacity: 0; transform: scale(0.82); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes drawLine {
+            from { stroke-dashoffset: 1; }
+            to   { stroke-dashoffset: 0; }
+        }
+        @keyframes subtitleIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes flowDash {
+            to { stroke-dashoffset: -360; }
+        }
+        @keyframes driftY {
+            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+            50%      { transform: translateY(-8px) rotate(0.6deg) scale(1.035); }
+        }
+        @keyframes fieldDrift {
+            from { transform: translate(-8px, 2px); }
+            to   { transform: translate(8px, -4px); }
+        }
+        @keyframes auraBreathe {
+            from { opacity: 0.62; transform: translate(-10px, 5px) scale(1); }
+            to   { opacity: 1;    transform: translate(10px, -7px) scale(1.08); }
+        }
+        @keyframes beamTravel {
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes dotPulse {
+            from { opacity: 0.45; }
+            to   { opacity: 1; }
+        }
+        @keyframes signupIn {
+            from { opacity: 0; transform: translate(-50%, calc(-100% + 16px)) scale(0.92); }
+            to   { opacity: 1; transform: translate(-50%, -100%) scale(1); }
         }
 
         /* ================= 页面容器 ================= */
@@ -59,37 +119,81 @@
             height: 50%;
             overflow: hidden;
             background: #ffffff;
-            animation: heroFade 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+            animation: heroReveal 0.95s var(--ease-out) backwards;
         }
-        .hero svg { display: block; width: 100%; height: 100%; }
+        .hero svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            animation: heroSettle 1.35s var(--ease-out) backwards;
+        }
 
-        /* SVG 内标题逐字浮现 */
-        .banner-title text {
-            opacity: 0;
-            animation: charIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        /* 标题：逐字上浮 + 去模糊 */
+        .banner-title .char {
+            animation: charIn 0.7s var(--ease-out) backwards;
+            animation-delay: calc(0.4s + var(--i, 0) * var(--stagger));
+            will-change: transform, opacity, filter;
         }
-        @keyframes charIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        /* Logo：与标题同期淡入，之后静止 */
+
+        /* Logo：回弹式落定 */
         .emblem {
-            opacity: 0;
-            animation: emblemIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: emblemIn 0.85s var(--ease-out) 0.15s backwards;
         }
-        @keyframes emblemIn { from { opacity: 0; } to { opacity: 1; } }
-        /* 下划线扫出 */
+
+        /* 下划线：按路径长度扫出 */
         .underline {
-            stroke-dasharray: 460;
-            stroke-dashoffset: 460;
-            animation: drawLine 1.1s ease 1s forwards;
+            stroke-dasharray: 1;
+            stroke-dashoffset: 0;
+            animation: drawLine 0.95s var(--ease-out) 1.05s backwards;
         }
-        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+        /* 英文副标题 */
+        .banner-sub {
+            animation: subtitleIn 0.8s var(--ease-out) 1.2s backwards;
+        }
+
         /* 背景线条缓慢流动 */
-        .flow-line { stroke-dasharray: 12 24; animation: flowDash 10s linear infinite; }
-        @keyframes flowDash { to { stroke-dashoffset: -360; } }
-        .drift { animation: driftY 12s ease-in-out infinite; }
-        @keyframes driftY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .flow-line {
+            stroke-dasharray: 12 24;
+            animation: flowDash var(--flow-dur, 10s) linear infinite;
+        }
+        .drift {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: driftY 12s var(--ease-in-out) infinite;
+        }
+
+        /* 背景整体缓慢漂移 */
+        .bg-field {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: fieldDrift 26s var(--ease-in-out) infinite alternate;
+            will-change: transform;
+        }
+
+        /* 光晕呼吸 */
+        .aura {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: auraBreathe 18s var(--ease-in-out) infinite alternate;
+        }
+
+        /* 流光束 */
+        .beam {
+            stroke-dasharray: 0.07 0.93;
+            stroke-dashoffset: 1;
+            opacity: 0.78;
+            animation: beamTravel 7.5s linear infinite;
+        }
+        .beam:nth-child(2) { animation-duration: 10.5s; animation-delay: -3.5s; }
+        .beam:nth-child(3) { animation-duration: 13s;   animation-delay: -7s; }
+
+        /* 点阵呼吸 */
+        .dot-field {
+            animation: dotPulse 5.5s var(--ease-in-out) infinite alternate;
+        }
 
         /* ================= 下半：按钮 + 信息区（约 50%） ================= */
         .panel {
@@ -100,6 +204,7 @@
             padding: 12px 14px;
             padding-bottom: calc(12px + env(safe-area-inset-bottom));
             gap: 10px;
+            animation: panelReveal 0.85s var(--ease-out) 0.1s backwards;
         }
 
         /* 三个按钮：竖排三行 */
@@ -123,9 +228,14 @@
             font-weight: bold;
             user-select: none;
             cursor: pointer;
-            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-            animation: cardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+            transition: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
+            animation: tileIn 0.65s var(--ease-out) backwards;
         }
+        /* 视觉顺序与 DOM 一致：从上到下依次抽出 */
+        .option-btn:nth-child(1) { animation-delay: 0.5s; }
+        .option-btn:nth-child(2) { animation-delay: 0.6s; }
+        .option-btn:nth-child(3) { animation-delay: 0.7s; }
+
         .option-btn.active {
             background: #e8f6ff;
             border-color: #4facfe;
@@ -155,8 +265,17 @@
             font-size: 0.95rem;
             line-height: 1.7;
         }
-        .info-inner.animate-in  { animation: fadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
-        .info-inner.animate-out { animation: fadeOut 0.3s cubic-bezier(0.55, 0, 1, 0.45) both; }
+        /* 信息切换进入时：内部行错落浮现（外层退场由 JS 控制） */
+        .info-lines p,
+        .info-dept span {
+            animation: rowIn 0.5s var(--ease-out) backwards;
+        }
+        .info-lines p:nth-child(1),
+        .info-dept span:nth-child(1) { animation-delay: 0.05s; }
+        .info-lines p:nth-child(2),
+        .info-dept span:nth-child(2) { animation-delay: 0.1s; }
+        .info-dept span:nth-child(3) { animation-delay: 0.15s; }
+        .info-dept span:nth-child(4) { animation-delay: 0.2s; }
 
         /* 信息区内的部门列表 */
         .info-dept {
@@ -175,6 +294,7 @@
             font-weight: bold;
             letter-spacing: 0.2em;
             color: #4f6bff;
+            animation: contentIn 0.55s var(--ease-out) 0.05s backwards;
         }
 
         /* 桌面/大屏访问时，提示这是竖屏专用页（但仍可用） */
@@ -208,6 +328,7 @@
             cursor: pointer;
             user-select: none;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            animation: signupIn 0.7s var(--ease-out) 1s backwards;
             transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
         }
 
@@ -216,20 +337,34 @@
             color: #ffffff;
         }
 
-        /* 弹窗遮罩 */
+        /* 弹窗遮罩：可过渡的可见性 + 背景虚化 */
         .modal-mask {
             position: fixed;
             inset: 0;
             z-index: 100;
-            display: none;
+            display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.55);
+            background: rgba(10, 24, 48, 0.55);
             padding: 20px;
             opacity: 0;
-            transition: opacity 0.25s ease;
+            visibility: hidden;
+            pointer-events: none;
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            transition:
+                opacity 0.3s ease,
+                visibility 0.3s,
+                backdrop-filter 0.35s ease,
+                -webkit-backdrop-filter 0.35s ease;
         }
-        .modal-mask.open { display: flex; opacity: 1; }
+        .modal-mask.open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
 
         .modal {
             width: 100%;
@@ -239,11 +374,17 @@
             border-radius: 0;
             padding: 26px 22px 22px;
             text-align: center;
-            transform: translateY(16px);
-            transition: transform 0.25s ease;
+            opacity: 0;
+            transform: translateY(22px) scale(0.96);
+            transition:
+                opacity 0.3s ease,
+                transform 0.4s var(--ease-out);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
         }
-        .modal-mask.open .modal { transform: translateY(0); }
+        .modal-mask.open .modal {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
 
         .modal-title {
             font-size: 1.3rem;
@@ -285,6 +426,27 @@
             font-family: inherit;
             text-decoration: underline;
         }
+
+        /* ================= 减少动态效果 ================= */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-delay: 0ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                transition-delay: 0ms !important;
+            }
+            .flow-line,
+            .drift,
+            .bg-field,
+            .aura,
+            .beam,
+            .dot-field {
+                animation: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -313,20 +475,50 @@
                         <stop offset="0"   stop-color="#4a5cff" stop-opacity="0.42"/>
                         <stop offset="1"   stop-color="#a07bff" stop-opacity="0.10"/>
                     </linearGradient>
-                    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="1">
+                    <!-- 逐字独立 text 需要 userSpaceOnUse，避免每个字重复整条渐变 -->
+                    <linearGradient id="titleGrad" gradientUnits="userSpaceOnUse"
+                                    x1="348" y1="520" x2="732" y2="520">
                         <stop offset="0"   stop-color="#1f3a8a"/>
                         <stop offset="0.6" stop-color="#3a4fd0"/>
                         <stop offset="1"   stop-color="#7a4fe0"/>
                     </linearGradient>
-                    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="0">
+                    <linearGradient id="accentGrad" gradientUnits="userSpaceOnUse"
+                                    x1="316" y1="600" x2="764" y2="600">
                         <stop offset="0"   stop-color="#2f9bff"/>
                         <stop offset="0.5" stop-color="#4f6bff"/>
                         <stop offset="1"   stop-color="#a04fef"/>
                     </linearGradient>
+                    <linearGradient id="underlineGrad" gradientUnits="userSpaceOnUse"
+                                    x1="330" y1="630" x2="750" y2="630">
+                        <stop offset="0"   stop-color="#2f9bff"/>
+                        <stop offset="0.5" stop-color="#4f6bff"/>
+                        <stop offset="1"   stop-color="#a04fef"/>
+                    </linearGradient>
+
+                    <!-- 背景呼吸光晕（极低透明度） -->
+                    <radialGradient id="auraBlue" cx="50%" cy="50%" r="50%">
+                        <stop offset="0"    stop-color="#4f8bff" stop-opacity="0.12"/>
+                        <stop offset="0.55" stop-color="#5a6bff" stop-opacity="0.05"/>
+                        <stop offset="1"    stop-color="#ffffff" stop-opacity="0"/>
+                    </radialGradient>
+                    <radialGradient id="auraViolet" cx="50%" cy="50%" r="50%">
+                        <stop offset="0"    stop-color="#8a5bff" stop-opacity="0.10"/>
+                        <stop offset="0.55" stop-color="#a07bff" stop-opacity="0.04"/>
+                        <stop offset="1"    stop-color="#ffffff" stop-opacity="0"/>
+                    </radialGradient>
                 </defs>
 
                 <!-- 背景：纯白 -->
                 <rect x="0" y="0" width="1080" height="900" fill="#ffffff"/>
+
+                <!-- ============ 背景动效层：整体缓慢漂移 ============ -->
+                <g class="bg-field">
+
+                    <!-- 呼吸光晕：缓慢放大、移动 -->
+                    <g class="aura">
+                        <ellipse cx="300" cy="180" rx="360" ry="260" fill="url(#auraBlue)"/>
+                        <ellipse cx="850" cy="720" rx="380" ry="280" fill="url(#auraViolet)"/>
+                    </g>
 
                 <!-- ============ 纯线条背景装饰（蓝紫色系） ============ -->
 
@@ -362,13 +554,26 @@
                 </g>
 
                 <!-- 装饰点阵 -->
-                <g fill="none" stroke="url(#lineViolet)" stroke-width="1.2" stroke-opacity="0.42">
+                <!-- 流光束：沿既有曲线掠过的短高光 -->
+                <g class="beams" fill="none" stroke-linecap="round">
+                    <path class="beam" pathLength="1" stroke="url(#lineBlue)" stroke-width="2.2"
+                          d="M-60 280 C 260 250, 520 360, 800 330 S 1240 410, 1400 370"/>
+                    <path class="beam" pathLength="1" stroke="url(#lineViolet)" stroke-width="1.9"
+                          d="M-60 120 C 220 90, 480 200, 760 170 S 1200 250, 1400 210"/>
+                    <path class="beam" pathLength="1" stroke="url(#lineCyan)" stroke-width="1.7"
+                          d="M-60 780 C 280 740, 560 840, 840 800 S 1280 880, 1400 840"/>
+                </g>
+
+                <g class="dot-field" style="animation-delay:-2.4s"
+                   fill="none" stroke="url(#lineViolet)" stroke-width="1.2" stroke-opacity="0.42">
                     <circle cx="860" cy="360" r="3"/>
                     <circle cx="920" cy="410" r="3"/>
                     <circle cx="980" cy="350" r="3"/>
                     <circle cx="900" cy="520" r="3"/>
                     <circle cx="960" cy="560" r="3"/>
                 </g>
+
+                </g><!-- /bg-field -->
 
                 <!-- 协会 Logo（居中偏上） -->
                 <g class="emblem">
@@ -377,31 +582,27 @@
                            preserveAspectRatio="xMidYMid meet"/>
                 </g>
 
-                <!-- 标题（居中，两行） -->
+                <!-- 标题（居中，两行）：逐字独立定位做错落入场 -->
                 <g class="banner-title" font-family="MyFont, 'Microsoft YaHei', sans-serif" font-weight="bold" text-anchor="middle">
-                    <text x="540" y="520" font-size="64" fill="url(#titleGrad)">
-                        <tspan style="animation-delay:0.25s">长</tspan>
-                        <tspan style="animation-delay:0.33s">沙</tspan>
-                        <tspan style="animation-delay:0.41s">理</tspan>
-                        <tspan style="animation-delay:0.49s">工</tspan>
-                        <tspan style="animation-delay:0.57s">大</tspan>
-                        <tspan style="animation-delay:0.65s">学</tspan>
-                    </text>
-                    <text x="540" y="600" font-size="64" fill="url(#accentGrad)">
-                        <tspan style="animation-delay:0.73s">学</tspan>
-                        <tspan style="animation-delay:0.81s">生</tspan>
-                        <tspan style="animation-delay:0.89s">羽</tspan>
-                        <tspan style="animation-delay:0.97s">毛</tspan>
-                        <tspan style="animation-delay:1.05s">球</tspan>
-                        <tspan style="animation-delay:1.13s">协</tspan>
-                        <tspan style="animation-delay:1.21s">会</tspan>
-                    </text>
-                    <line class="underline" x1="330" y1="630" x2="750" y2="630"
-                          stroke="url(#accentGrad)" stroke-width="5" stroke-linecap="round"/>
+                    <text class="char" x="380" y="520" font-size="64" fill="url(#titleGrad)" style="--i:0">长</text>
+                    <text class="char" x="444" y="520" font-size="64" fill="url(#titleGrad)" style="--i:1">沙</text>
+                    <text class="char" x="508" y="520" font-size="64" fill="url(#titleGrad)" style="--i:2">理</text>
+                    <text class="char" x="572" y="520" font-size="64" fill="url(#titleGrad)" style="--i:3">工</text>
+                    <text class="char" x="636" y="520" font-size="64" fill="url(#titleGrad)" style="--i:4">大</text>
+                    <text class="char" x="700" y="520" font-size="64" fill="url(#titleGrad)" style="--i:5">学</text>
+                    <text class="char" x="348" y="600" font-size="64" fill="url(#accentGrad)" style="--i:6">学</text>
+                    <text class="char" x="412" y="600" font-size="64" fill="url(#accentGrad)" style="--i:7">生</text>
+                    <text class="char" x="476" y="600" font-size="64" fill="url(#accentGrad)" style="--i:8">羽</text>
+                    <text class="char" x="540" y="600" font-size="64" fill="url(#accentGrad)" style="--i:9">毛</text>
+                    <text class="char" x="604" y="600" font-size="64" fill="url(#accentGrad)" style="--i:10">球</text>
+                    <text class="char" x="668" y="600" font-size="64" fill="url(#accentGrad)" style="--i:11">协</text>
+                    <text class="char" x="732" y="600" font-size="64" fill="url(#accentGrad)" style="--i:12">会</text>
+                    <path class="underline" d="M330 630 H750" pathLength="1"
+                          stroke="url(#underlineGrad)" stroke-width="5" stroke-linecap="round" fill="none"/>
                 </g>
 
                 <!-- 英文副标题 -->
-                <text x="540" y="680" text-anchor="middle" fill="#5a6bcc" font-size="20"
+                <text class="banner-sub" x="540" y="680" text-anchor="middle" fill="#5a6bcc" font-size="20"
                       font-family="Arial, sans-serif" letter-spacing="3">
                     CSUST STUDENT BADMINTON ASSOCIATION
                 </text>
@@ -411,11 +612,11 @@
         <!-- 下半：三个按钮（竖排）+ 固定高度信息区 -->
         <div class="panel">
             <div class="btn-list">
-                <div class="option-btn" data-role="register" style="animation-delay:0.15s"
+                <div class="option-btn" data-role="register" role="button" tabindex="0"
                      onclick="onBtn('register', this)">协会动态</div>
-                <div class="option-btn" data-role="style" style="animation-delay:0.25s"
+                <div class="option-btn" data-role="style" role="button" tabindex="0"
                      onclick="onBtn('style', this)">协会风采</div>
-                <div class="option-btn" data-role="intro" style="animation-delay:0.35s"
+                <div class="option-btn" data-role="intro" role="button" tabindex="0"
                      onclick="onBtn('intro', this)">协会介绍</div>
             </div>
             <div class="info-box">
@@ -427,9 +628,10 @@
         <button class="signup-btn" type="button" onclick="openSignupModal()">干事报名</button>
 
         <!-- 报名弹窗 -->
-        <div class="modal-mask" id="signup-modal" onclick="if(event.target===this)closeSignupModal()">
+        <div class="modal-mask" id="signup-modal" role="dialog" aria-modal="true"
+             aria-labelledby="signup-title" onclick="if(event.target===this)closeSignupModal()">
             <div class="modal">
-                <div class="modal-title">干事报名</div>
+                <div class="modal-title" id="signup-title">干事报名</div>
                 <div class="modal-text">下载报名表以向协会运营组织报名，我们期待你的到来！</div>
                 <a class="modal-download" href="干事报名表.docx" download>
                     <span>&#128229;</span>
@@ -441,8 +643,13 @@
     </div>
 
     <script>
-        var btns = document.querySelectorAll('.option-btn');
+        var btns = Array.prototype.slice.call(document.querySelectorAll('.option-btn'));
         var infoEl = document.getElementById('info');
+        var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+        function motionOff() {
+            return reducedMotion.matches;
+        }
 
         // 各按钮对应的信息区内容
         // 竖屏逻辑下：协会风采不使用图片，显示提示文字"我们的风采"
@@ -470,28 +677,56 @@
             intro:    'intro.html'
         };
 
-        var OUT_MS = 300;
+        // 用 Web Animations API 控制信息区退场，可被下一次切换直接打断；
+        // 入场与内部行错落由 CSS 自动播放。
+        var INFORMATION_OUT_MS = 160;
         var switchToken = 0;
 
-        function replayAnimation(el) {
-            el.classList.remove('animate-in', 'animate-out');
-            void el.offsetWidth;
-            el.classList.add('animate-in');
+        function cancelAnimations(el) {
+            if (el && typeof el.getAnimations === 'function') {
+                el.getAnimations().forEach(function (anim) { anim.cancel(); });
+            }
         }
 
-        // 切换信息区内容（带淡出淡入）
         function showInfo(role) {
             var token = ++switchToken;
             var nextHTML = INFO[role] || '';
+            var currentRole = infoEl.getAttribute('data-role') || '';
+            var hasContent = infoEl.children.length > 0;
 
-            // infoEl 本身即 .info-inner 容器，直接替换内容并重播动画
-            infoEl.classList.remove('animate-in');
-            infoEl.classList.add('animate-out');
-            setTimeout(function () {
+            if (hasContent && currentRole === role) {
+                cancelAnimations(infoEl);
+                return;
+            }
+
+            function mount() {
                 if (token !== switchToken) return;
+                // 退场动画停留在 fill:forwards，替换内容前必须撤销，
+                // 否则信息区会一直保持 opacity:0。
+                cancelAnimations(infoEl);
+                infoEl.setAttribute('data-role', role || '');
                 infoEl.innerHTML = nextHTML;
-                replayAnimation(infoEl);
-            }, OUT_MS);
+            }
+
+            if (!hasContent || motionOff() || typeof infoEl.animate !== 'function') {
+                cancelAnimations(infoEl);
+                mount();
+                return;
+            }
+
+            cancelAnimations(infoEl);
+            var out = infoEl.animate(
+                [
+                    { opacity: 1, transform: 'translateY(0)' },
+                    { opacity: 0, transform: 'translateY(-8px)' }
+                ],
+                {
+                    duration: INFORMATION_OUT_MS,
+                    easing: 'cubic-bezier(0.4, 0, 1, 1)',
+                    fill: 'forwards'
+                }
+            );
+            out.finished.then(mount, function () { /* 被新的切换取消 */ });
         }
 
         function setActive(role) {
@@ -503,6 +738,7 @@
         // 点击按钮：显示对应文字 + 跳转二级页面
         var jumping = false;
         function onBtn(role, el) {
+            stopAuto();
             setActive(role);
             showInfo(role);
             if (jumping) return;
@@ -516,49 +752,103 @@
         // ---------- 自动轮播（无操作时） ----------
         var autoOrder = ['register', 'style', 'intro'];
         var autoStep = 0;
-        var autoRunning = true;
-        var HOLD_MS = 3000;
-        var GAP_MS = 900;
+        var autoRunning = false;
+        var HOLD_MS = 3000;      // 每项停留
+        var GAP_MS = 700;        // 高亮熄灭的留白（缩短后节奏更连贯）
         var autoTimer = null;
 
-        function autoLoop() {
+        function stopAuto() {
+            autoRunning = false;
+            if (autoTimer) {
+                clearTimeout(autoTimer);
+                autoTimer = null;
+            }
+        }
+
+        function runAutoStep() {
             if (!autoRunning) return;
             var role = autoOrder[autoStep];
             setActive(role);
             showInfo(role);
+
             autoTimer = setTimeout(function () {
                 if (!autoRunning) return;
-                // 暂时取消高亮
                 setActive(null);
+
                 autoTimer = setTimeout(function () {
                     if (!autoRunning) return;
                     autoStep = (autoStep + 1) % autoOrder.length;
-                    autoLoop();
+                    runAutoStep();
                 }, GAP_MS);
             }, HOLD_MS);
         }
 
-        // 用户交互即暂停自动轮播
-        function stopAuto() {
-            autoRunning = false;
-            if (autoTimer) clearTimeout(autoTimer);
+        function startAuto(resetStep) {
+            stopAuto();
+            autoRunning = true;
+            if (resetStep) autoStep = 0;
+            runAutoStep();
         }
+
+        function queueAutoStart(delay) {
+            stopAuto();
+            autoTimer = setTimeout(function () { startAuto(true); }, delay);
+        }
+
+        // 用户交互即暂停自动轮播
         btns.forEach(function (b) {
             b.addEventListener('touchstart', stopAuto, { passive: true });
+            b.addEventListener('pointerdown', stopAuto, { passive: true });
+            b.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                    e.preventDefault();
+                    b.click();
+                }
+            });
         });
 
-        // 启动自动轮播
-        autoLoop();
+        // 页面不可见时停止计时，回来后从当前项继续
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                stopAuto();
+            } else {
+                startAuto(false);
+            }
+        });
+
+        // 入场动画基本结束后再开始轮播，避免与标题/按钮抢戏；
+        // 减少动态效果时只静态展示第一项，不做自动切换。
+        if (motionOff()) {
+            setActive('register');
+            showInfo('register');
+        } else {
+            queueAutoStart(1800);
+        }
 
         // ---------- 干事报名弹窗 ----------
+        var modalEl = document.getElementById('signup-modal');
+        var lastFocused = null;
+
         function openSignupModal() {
-            var modal = document.getElementById('signup-modal');
-            if (modal) modal.classList.add('open');
+            if (!modalEl) return;
+            stopAuto();
+            lastFocused = document.activeElement;
+            modalEl.classList.add('open');
+            var download = modalEl.querySelector('.modal-download');
+            if (download) {
+                setTimeout(function () { download.focus(); }, 80);
+            }
         }
+
         function closeSignupModal() {
-            var modal = document.getElementById('signup-modal');
-            if (modal) modal.classList.remove('open');
+            if (!modalEl || !modalEl.classList.contains('open')) return;
+            modalEl.classList.remove('open');
+            if (lastFocused && typeof lastFocused.focus === 'function') {
+                lastFocused.focus();
+            }
+            if (!document.hidden) startAuto(false);
         }
+
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') closeSignupModal();
         });
