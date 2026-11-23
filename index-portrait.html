@@ -416,7 +416,7 @@
             text-decoration: none;
             cursor: pointer;
         }
-        .modal-close {
+                .modal-close {
             margin-top: 14px;
             font-size: 0.92rem;
             color: #888;
@@ -425,6 +425,74 @@
             cursor: pointer;
             font-family: inherit;
             text-decoration: underline;
+        }
+
+        /* ---------- 报名说明（截止时间 + 提交邮箱） ---------- */
+        .modal-notice {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-bottom: 16px;
+            padding: 10px 12px;
+            text-align: left;
+            background: #f4f8ff;
+            border-left: 4px solid #287ee3;
+        }
+
+        .modal-notice p {
+            font-size: 0.92rem;
+            color: #1f3a8a;
+            line-height: 1.6;
+        }
+
+        .modal-notice p:first-child {
+            font-weight: bold;
+            letter-spacing: 0.08em;
+        }
+
+        /* 截止时间用红字突出（与新闻页红字提示同色） */
+        .modal-notice p:nth-child(2) {
+            font-weight: bold;
+            color: #d21f1f;
+        }
+
+        .modal-notice p:nth-child(3) {
+            font-weight: bold;
+            word-break: break-all;
+        }
+
+        /* ---------- 报名截止倒计时按钮（报名按钮正上方） ---------- */
+        .deadline-btn {
+            position: absolute;
+            left: 50%;
+            top: calc(50% - 12px);
+            transform: translate(-50%, calc(-100% - 54px));   /* 叠在报名按钮上方 */
+            z-index: 20;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 16px;
+            font-size: 0.88rem;
+            font-weight: bold;
+            font-family: inherit;
+            color: #ffffff;
+            background: rgba(7, 32, 74, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 0;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+
+        /* 未到截止时间前不显示；JS 判定未过期后才显示 */
+        .deadline-btn[hidden] { display: none; }
+
+        /* 倒计时数字等宽，避免逐秒跳动 */
+        .deadline-btn .deadline-time {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.04em;
         }
 
         /* ================= 减少动态效果 ================= */
@@ -624,8 +692,16 @@
             </div>
         </div>
 
-        <!-- 报名按钮：位于背景与下半区分隔线正中 -->
-        <button class="signup-btn" type="button" onclick="openSignupModal()">干事报名</button>
+                <!-- 报名按钮：位于背景与下半区分隔线正中；2026-11-26 00:00 后由脚本整块移除 -->
+        <button class="signup-btn" id="signup-btn" type="button" onclick="openSignupModal()">干事报名</button>
+
+        <!-- 报名截止倒计时按钮：与报名按钮同期出现、同期移除 -->
+        <button class="deadline-btn" id="deadline-btn" type="button"
+                onclick="openSignupModal()" hidden>
+            <span>&#9203;</span>
+            <span>距报名截止</span>
+            <span class="deadline-time" id="deadline-time">--</span>
+        </button>
 
         <!-- 报名弹窗 -->
         <div class="modal-mask" id="signup-modal" role="dialog" aria-modal="true"
@@ -633,6 +709,14 @@
             <div class="modal">
                 <div class="modal-title" id="signup-title">干事报名</div>
                 <div class="modal-text">下载报名表以向协会运营组织报名，我们期待你的到来！</div>
+
+                <!-- 报名说明：数据收集截止时间与提交邮箱；过期后随按钮一并移除 -->
+                <div class="modal-notice" id="signup-notice">
+                    <p>报名说明</p>
+                    <p>数据收集截止至 2026.11.26，0:00</p>
+                    <p>请将报名表发送邮件至 csustnc@foxmail.com</p>
+                </div>
+
                 <a class="modal-download" href="报名数据收集表.xlsx" download>
                     <span>&#128229;</span>
                     <span>下载报名表</span>
@@ -849,9 +933,72 @@
             if (!document.hidden) startAuto(false);
         }
 
-        document.addEventListener('keydown', function (e) {
+                document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') closeSignupModal();
         });
+
+        // ---------- 报名时限：2026-11-26 00:00 之后，报名按钮及其控件从主页移除 ----------
+        // 说明：截止后不是“置灰不可点”，而是把按钮、倒计时控件、报名说明一并从 DOM 中删除，
+        //       主页上不再出现任何与报名相关的控件。
+        (function signupDeadline() {
+            var DEADLINE = new Date(2026, 10, 26, 0, 0, 0);   // 注意：月份从 0 开始，10 表示 11 月
+
+            var signupBtn = document.getElementById('signup-btn');
+            var deadlineBtn = document.getElementById('deadline-btn');
+            var timeEl = document.getElementById('deadline-time');
+            var noticeEl = document.getElementById('signup-notice');
+
+            // 从主页彻底移除报名相关的全部控件
+            function removeSignupUI() {
+                if (timerId) clearInterval(timerId);
+                // 弹窗若正开着，先关掉；并避免关闭逻辑把焦点交还给已删除的按钮
+                if (modalEl) {
+                    modalEl.classList.remove('open');
+                    lastFocused = null;
+                }
+                [signupBtn, deadlineBtn, noticeEl].forEach(function (el) {
+                    if (el && el.parentNode) el.parentNode.removeChild(el);
+                });
+                // 倒计时控件（按钮内的 span）与弹窗一起移除
+                if (timeEl && timeEl.parentNode) timeEl.parentNode.removeChild(timeEl);
+                if (modalEl && modalEl.parentNode) modalEl.parentNode.removeChild(modalEl);
+            }
+
+            // 填充倒计时文字：X天 HH:MM:SS
+            function renderCountdown(ms) {
+                var total = Math.floor(ms / 1000);
+                var days = Math.floor(total / 86400);
+                var hours = Math.floor(total % 86400 / 3600);
+                var minutes = Math.floor(total % 3600 / 60);
+                var seconds = total % 60;
+                var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+                var clock = pad(hours) + ':' + pad(minutes) + ':' + pad(seconds);
+                return days > 0 ? days + ' 天 ' + clock : clock;
+            }
+
+            var timerId = null;
+
+            function tick() {
+                var left = DEADLINE.getTime() - Date.now();
+                if (left <= 0) {
+                    if (timeEl) timeEl.textContent = renderCountdown(0);
+                    removeSignupUI();      // 到点立即从主页移除
+                    return;
+                }
+                if (timeEl) timeEl.textContent = renderCountdown(left);
+            }
+
+            // 已经过期：直接移除，不再显示任何报名控件
+            if (DEADLINE.getTime() - Date.now() <= 0) {
+                removeSignupUI();
+                return;
+            }
+
+            // 未过期：显示倒计时按钮并开始逐秒更新
+            if (deadlineBtn) deadlineBtn.hidden = false;
+            tick();
+            timerId = setInterval(tick, 1000);
+        })();
 
         // ---------- 横屏（宽 > 高）时回到桌面版首页 ----------
         // 条件与 index.html 的竖屏跳转互斥，不会形成循环
