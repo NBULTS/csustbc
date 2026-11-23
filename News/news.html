@@ -118,7 +118,7 @@
             animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
         }
 
-        /* 单条动态卡片：直角风格；左侧日期 + 右侧内容 两栏布局 */
+                /* 单条动态卡片：直角风格；左侧日期 + 右侧内容 两栏布局 */
         .news-item {
             display: flex;
             flex-direction: row;
@@ -128,11 +128,21 @@
             background: #ffffff;
             border: 2px solid #d0d7de;
             border-radius: 0;
-            overflow: hidden;               /* 竖条裁切不外溢 */
+            /* 注意：卡片在纵向 flex 容器里必须禁止被压缩，
+               否则内容一多就会被压矮，配合 overflow:hidden 会出现“吃字” */
+            flex: 0 0 auto;
+            min-height: -moz-fit-content;
+            min-height: fit-content;
+            overflow: visible;              /* 不再裁切文字，改由子元素控制圆角/背景 */
             animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
             /* 新闻内容一律使用系统字体（不使用站内自建字体） */
             font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
                          "Heiti SC", "WenQuanYi Micro Hei", Arial, sans-serif;
+        }
+
+        /* 左侧日期竖条需要溢出裁切时，由自身负责，不影响右侧文字 */
+        .news-item > .news-date {
+            overflow: hidden;
         }
 
         /* 左侧日期竖条：独立整条色带，与卡片等高，日期文字垂直居中 */
@@ -153,20 +163,25 @@
             word-break: break-all;          /* 窄条时日期可折行 */
         }
 
-        /* 右侧内容区 */
+                /* 右侧内容区 */
         .news-item .news-body {
             flex: 1 1 auto;
             min-width: 0;                   /* 允许内容换行，防止撑破 */
+            min-height: 0;
             display: flex;
             flex-direction: column;
+            justify-content: center;        /* 内容少时垂直居中 */
             gap: 8px;
             padding: 22px 26px;
+            /* 文字不被任何父级裁切 */
+            overflow: visible;
         }
 
         .news-item .news-title {
             font-size: 1.3rem;
             font-weight: bold;
             color: #1f3a8a;
+            line-height: 1.5;
         }
 
         .news-item .news-desc {
