@@ -476,33 +476,6 @@
             user-select: all;               /* 单击即可整段选中，方便复制 */
         }
 
-        /* ---------- 报名截止提示（报名按钮正上方） ---------- */
-        .deadline-btn {
-            position: absolute;
-            left: 50%;
-            top: calc(50% - 12px);
-            transform: translate(-50%, calc(-100% - 54px));   /* 叠在报名按钮上方 */
-            z-index: 20;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 9px 16px;
-            font-size: 0.88rem;
-            font-weight: bold;
-            font-family: inherit;
-            color: #ffffff;
-            background: rgba(7, 32, 74, 0.9);
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            border-radius: 0;
-            user-select: none;
-            white-space: nowrap;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-        }
-
-        /* 未到截止时间前不显示；JS 判定未过期后才显示 */
-        .deadline-btn[hidden] { display: none; }
-
         /* ================= 减少动态效果 ================= */
         @media (prefers-reduced-motion: reduce) {
             *,
@@ -703,12 +676,6 @@
                 <!-- 报名按钮：位于背景与下半区分隔线正中；2026-11-26 00:00 后由脚本整块移除 -->
         <button class="signup-btn" id="signup-btn" type="button" onclick="openSignupModal()">干事报名</button>
 
-                <!-- 报名截止提示：与报名按钮同期出现、同期移除 -->
-        <div class="deadline-btn" id="deadline-btn" hidden>
-            <span>&#9203;</span>
-            <span>报名截止 2026.11.26 0:00</span>
-        </div>
-
         <!-- 报名弹窗 -->
         <div class="modal-mask" id="signup-modal" role="dialog" aria-modal="true"
              aria-labelledby="signup-title" onclick="if(event.target===this)closeSignupModal()">
@@ -716,7 +683,7 @@
                 <div class="modal-title" id="signup-title">干事报名</div>
                 <div class="modal-text">下载报名表以向协会运营组织报名，我们期待你的到来！</div>
 
-                                <!-- 报名说明：数据收集截止时间与提交邮箱；过期后随按钮一并移除 -->
+                <!-- 报名说明：数据收集截止时间与提交邮箱；过期后随按钮一并移除 -->
                 <div class="modal-notice" id="signup-notice">
                     <p>报名说明</p>
                     <p>数据收集截止至 2026.11.26，0:00</p>
@@ -945,13 +912,13 @@
         });
 
                 // ---------- 报名时限：2026-11-26 00:00 之后，报名按钮及其控件从主页移除 ----------
-        // 说明：截止后不是“置灰不可点”，而是把按钮、截止提示、报名说明一并从 DOM 中删除，
+        // 说明：截止后不是“置灰不可点”，而是把报名按钮、报名说明、弹窗一并从 DOM 中删除，
         //       主页上不再出现任何与报名相关的控件。
+        // 截止时间只在报名说明里以文字体现，主页不设单独的时限控件。
         (function signupDeadline() {
             var DEADLINE = new Date(2026, 10, 26, 0, 0, 0);   // 注意：月份从 0 开始，10 表示 11 月
 
             var signupBtn = document.getElementById('signup-btn');
-            var deadlineBtn = document.getElementById('deadline-btn');
             var noticeEl = document.getElementById('signup-notice');
 
             // 从主页彻底移除报名相关的全部控件
@@ -962,7 +929,7 @@
                     modalEl.classList.remove('open');
                     lastFocused = null;
                 }
-                [signupBtn, deadlineBtn, noticeEl, modalEl].forEach(function (el) {
+                [signupBtn, noticeEl, modalEl].forEach(function (el) {
                     if (el && el.parentNode) el.parentNode.removeChild(el);
                 });
             }
@@ -975,8 +942,7 @@
                     removeSignupUI();
                     return;
                 }
-                if (deadlineBtn) deadlineBtn.hidden = false;   // 未过期：显示截止提示
-                // 到点那一刻再移除一次，无需逐秒刷新
+                // 到点那一刻再执行一次移除
                 deadlineTimer = setTimeout(scheduleRemoval, Math.min(left, 2147483647));
             }
 
