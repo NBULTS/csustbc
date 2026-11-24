@@ -33,11 +33,19 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+            - name: Upload artifact
+        # v3 内部依赖已停用的 upload-artifact@v3，会导致产物未上传
+        # （deploy 报 "No artifacts named github-pages were found"），
+        # 因此必须使用 v4 及以上版本。
+        uses: actions/upload-pages-artifact@v4
         with:
-          # Upload entire repository
+          # 只发布站点文件，排除仓库元数据与本地示例目录
           path: '.'
+          exclude: |
+            .git/**
+            .github/**
+            Regesiter(Not use just a example)/**
+            **/*.bak
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
