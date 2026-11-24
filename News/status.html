@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#287ee3">
+    <title>报名状态查询 · 长理羽协</title>
+    <style>
+        @font-face {
+            font-family: "MyFont";
+            src: url("../zh-cn.woff2") format("woff2"),
+                 url("../zh-cn-subset.ttf") format("truetype");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: "MyFont", "Microsoft YaHei", Arial, sans-serif;
+        }
+
+        @keyframes heroFade {
+            from { opacity: 0; transform: scale(1.04) translateZ(0); }
+            to   { opacity: 1; transform: scale(1)    translateZ(0); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(60px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        @keyframes cardIn {
+            from { transform: translateY(24px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* ================= 顶部标题栏 ================= */
+        .topbar {
+            position: relative;
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #1f3a8a 0%, #287ee3 55%, #7a4fe0 100%);
+            animation: heroFade 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .hero-title {
+            color: #ffffff;
+            font-size: 1.6rem;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .back-btn {
+            flex: 0 0 auto;
+            padding: 8px 18px;
+            font-size: 0.95rem;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0.28);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            transition: background 0.25s ease, padding-right 0.25s ease;
+        }
+
+        .back-btn:hover { background: rgba(0, 0, 0, 0.55); padding-right: 24px; }
+
+        /* ================= 内容区 ================= */
+        .panel {
+            flex: 1 1 auto;
+            min-height: 0;
+            background: #287ee3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 24px 28px;
+            padding-bottom: calc(24px + env(safe-area-inset-bottom));
+            gap: 18px;
+            overflow-y: auto;
+            animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+        }
+
+        /* 查询卡片 */
+        .query-card {
+            width: 100%;
+            max-width: 560px;
+            flex: 0 0 auto;
+            background: #ffffff;
+            border: 2px solid #d0d7de;
+            padding: 26px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+                         "Heiti SC", "WenQuanYi Micro Hei", Arial, sans-serif;
+            animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .query-card .card-lead {
+            font-size: 0.98rem;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .field { display: flex; flex-direction: column; gap: 6px; }
+
+        .field label {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #1f3a8a;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 1rem;
+            font-family: inherit;
+            color: #222;
+            background: #f7f9fc;
+            border: 1px solid #c3cedb;
+            border-radius: 0;
+            outline: none;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .field input:focus {
+            border-color: #287ee3;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(40, 126, 227, 0.14);
+        }
+
+        .field input.is-error { border-color: #d21f1f; background: #fff6f6; }
+
+        .submit-btn {
+            margin-top: 4px;
+            padding: 13px 20px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            font-family: inherit;
+            color: #ffffff;
+            background: linear-gradient(135deg, #1f3a8a 0%, #287ee3 100%);
+            border: none;
+            cursor: pointer;
+            letter-spacing: 0.08em;
+            transition: filter 0.2s ease, transform 0.1s ease;
+        }
+
+        .submit-btn:hover  { filter: brightness(1.12); }
+        .submit-btn:active { transform: translateY(1px); }
+
+        /* ================= 结果区 ================= */
+        .result {
+            display: none;
+            width: 100%;
+            max-width: 560px;
+            flex: 0 0 auto;
+            background: #ffffff;
+            border: 2px solid #d0d7de;
+            border-left: 10px solid #287ee3;
+            padding: 22px 26px;
+            flex-direction: column;
+            gap: 10px;
+            font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+                         "Heiti SC", "WenQuanYi Micro Hei", Arial, sans-serif;
+            animation: cardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .result.is-open { display: flex; }
+
+        .result .result-head {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #1f3a8a;
+        }
+
+        .result .result-row {
+            display: flex;
+            gap: 10px;
+            font-size: 0.98rem;
+            color: #444;
+            line-height: 1.7;
+        }
+
+        .result .result-row .k {
+            flex: 0 0 auto;
+            min-width: 92px;
+            color: #7a8698;
+        }
+
+        .result .result-row .v { flex: 1 1 auto; word-break: break-all; }
+
+        /* 状态徽标 */
+        .badge {
+            display: inline-block;
+            padding: 3px 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            letter-spacing: 0.04em;
+            border: 1px solid transparent;
+        }
+
+        .badge.ok       { color: #1a7f37; background: #e8f6ec; border-color: #a9d8b5; }
+        .badge.pending  { color: #9a6700; background: #fff8e1; border-color: #e6d4a0; }
+        .badge.unknown  { color: #8b1f1f; background: #fdeeee; border-color: #e7b4b4; }
+
+        .result .result-note {
+            margin-top: 6px;
+            padding-top: 10px;
+            border-top: 1px dashed #c8d5e6;
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.75;
+        }
+
+        .result .result-note strong { color: #d21f1f; }
+
+        /* 页脚说明 */
+        .foot-note {
+            max-width: 560px;
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.86rem;
+            line-height: 1.8;
+            text-align: center;
+            padding-bottom: 6px;
+        }
+
+        /* ================= 移动端适配 ================= */
+        body { -webkit-tap-highlight-color: transparent; }
+
+        @media (hover: none) {
+            .back-btn:hover { padding-right: 18px; background: rgba(0, 0, 0, 0.28); }
+        }
+
+        @media (max-width: 720px) {
+            .topbar { padding: 12px 16px; }
+            .hero-title { font-size: 1.35rem; }
+            .panel { padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); gap: 14px; }
+            .query-card { padding: 22px 20px; }
+        }
+
+        @media (max-width: 480px) {
+            .topbar { padding: 10px 14px; }
+            .hero-title { font-size: 1.2rem; letter-spacing: 0.06em; }
+            .back-btn { padding: 7px 12px; font-size: 0.85rem; }
+
+            .panel { padding: 12px 14px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); gap: 12px; }
+            .query-card { padding: 18px 16px; gap: 14px; }
+            .query-card .card-lead { font-size: 0.92rem; }
+            .field input { padding: 11px 12px; font-size: 0.98rem; }
+            .submit-btn { font-size: 1rem; padding: 12px 16px; }
+            .result { padding: 18px 16px; border-left-width: 8px; }
+            .result .result-head { font-size: 1.06rem; }
+            .result .result-row { font-size: 0.94rem; }
+            .result .result-row .k { min-width: 76px; }
+        }
+
+        @media (max-width: 360px) {
+            .hero-title { font-size: 1.05rem; }
+            .back-btn { font-size: 0.78rem; padding: 6px 10px; }
+            .result .result-row { flex-direction: column; gap: 2px; }
+        }
+
+        @media (max-height: 480px) {
+            .topbar { padding: 8px 16px; }
+            .hero-title { font-size: 1.1rem; }
+            .panel { padding: 12px 20px; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <div class="hero-title">长理羽协 · 报名状态查询</div>
+            <div class="back-btn" onclick="window.location.href='news.html'">返回动态 &rarr;</div>
+        </div>
+
+        <div class="panel">
+            <div class="query-card">
+                <div class="card-lead">
+                    请输入你的<strong>姓名</strong>和<strong>学号后四位</strong>查询报名表的归档状态。
+                </div>
+
+                <div class="field">
+                    <label for="input-name">姓名</label>
+                    <input id="input-name" type="text" inputmode="text"
+                           autocomplete="name" placeholder="请输入你的姓名" maxlength="20">
+                </div>
+
+                <div class="field">
+                    <label for="input-sid">学号后四位</label>
+                    <input id="input-sid" type="text" inputmode="numeric"
+                           autocomplete="off" placeholder="例如 2601" maxlength="4">
+                </div>
+
+                <button class="submit-btn" id="btn-query" type="button">查询我的状态</button>
+            </div>
+
+            <!-- 查询结果 -->
+            <div class="result" id="result">
+                <div class="result-head" id="result-head"></div>
+                <div id="result-body"></div>
+                <div class="result-note" id="result-note"></div>
+            </div>
+
+            <div class="foot-note" id="foot-note">
+                数据更新时间：<span id="updated-at">加载中……</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查询数据：独立文件，更新数据只需替换此文件，无需改动本页面 -->
+    <script src="data/register-status.js"></script>
+    <script>
+        // ============================================================
+        // 报名状态查询
+        // 数据来源：data/register-status.js（由汇总脚本自动生成）
+        // 数据结构：window.REGISTER_STATUS = {
+        //     updated: 'YYYY-MM-DD',
+        //     items: [ { n: 姓名, s: 学号后四位, d: 部门, st: 状态 }, ... ]
+        // }
+        // ============================================================
+        var STATUS_TEXT = {
+            archived: '已归档',
+            pending:  '未归档',
+            noreply:  '协会已向你回信'
+        };
+
+        var nameInput = document.getElementById('input-name');
+        var sidInput  = document.getElementById('input-sid');
+        var resultEl  = document.getElementById('result');
+        var headEl    = document.getElementById('result-head');
+        var bodyEl    = document.getElementById('result-body');
+        var noteEl    = document.getElementById('result-note');
+
+        // 取数据：优先使用本地 JS 变量；若没有则尝试 fetch JSON
+        function getData() {
+            if (window.REGISTER_STATUS && window.REGISTER_STATUS.items) {
+                return Promise.resolve(window.REGISTER_STATUS);
+            }
+            return fetch('data/register-status.json', { cache: 'no-store' })
+                .then(function (r) { return r.json(); });
+        }
+
+        function normalize(text) {
+            return (text || '').trim().replace(/\s+/g, '');
+        }
+
+        function escapeHtml(text) {
+            return String(text == null ? '' : text)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function row(label, value) {
+            return '<div class="result-row"><span class="k">' + escapeHtml(label) +
+                   '</span><span class="v">' + value + '</span></div>';
+        }
+
+        function showResult(html, headHtml, noteHtml) {
+            headEl.innerHTML = headHtml;
+            bodyEl.innerHTML = html || '';
+            noteEl.innerHTML = noteHtml || '';
+            noteEl.style.display = noteHtml ? '' : 'none';
+            resultEl.classList.add('is-open');
+            resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function doQuery() {
+            var name = normalize(nameInput.value);
+            var sid  = normalize(sidInput.value).replace(/\D/g, '');
+
+            nameInput.classList.remove('is-error');
+            sidInput.classList.remove('is-error');
+
+            if (!name) {
+                nameInput.classList.add('is-error');
+                showResult('', '请先填写姓名',
+                    '姓名请与报名表中填写的<strong>完全一致</strong>，不要填写网名或昵称。');
+                nameInput.focus();
+                return;
+            }
+            if (sid.length !== 4) {
+                sidInput.classList.add('is-error');
+                showResult('', '学号后四位格式不正确',
+                    '请输入<strong>4 位数字</strong>，例如“2601”。');
+                sidInput.focus();
+                return;
+            }
+
+            getData().then(function (data) {
+                var items = (data && data.items) || [];
+                var hit = null;
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].n === name && items[i].s === sid) { hit = items[i]; break; }
+                }
+
+                if (!hit) {
+                    showResult(
+                        row('查询姓名', escapeHtml(name)) + row('学号后四位', escapeHtml(sid)),
+                        '未查询到你的报名记录',
+                        '可能的原因：<br>' +
+                        '1. 报名表<strong>尚未收到</strong>，或尚未完成归档；<br>' +
+                        '2. 姓名或学号后四位与报名表不一致（请勿填写网名）；<br>' +
+                        '3. 报名表<strong>未填写姓名</strong>等关键信息，暂时无法归档。<br>' +
+                        '如有疑问，请联系 csustbc@foxmail.com。'
+                    );
+                    return;
+                }
+
+                var statusHtml = '<span class="badge ok">' + escapeHtml(hit.st) + '</span>';
+                showResult(
+                    row('姓名', escapeHtml(hit.n)) +
+                    row('学号后四位', escapeHtml(hit.s)) +
+                    row('归档部门', hit.d ? escapeHtml(hit.d) + '（第一志愿）' : '待定') +
+                    row('当前状态', statusHtml),
+                    '查询成功',
+                    '你的报名表<strong>已归档</strong>，部门以第一志愿为准。' +
+                    '后续安排请留意会员群通知。'
+                );
+            }).catch(function () {
+                showResult('', '数据加载失败',
+                    '请检查网络后重试，或稍后再访问本页面。');
+            });
+        }
+
+        document.getElementById('btn-query').addEventListener('click', doQuery);
+
+        // 回车即查询
+        [nameInput, sidInput].forEach(function (el) {
+            el.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') doQuery();
+            });
+        });
+
+        // 显示数据更新时间
+        getData().then(function (data) {
+            var el = document.getElementById('updated-at');
+            el.textContent = (data && data.updated) ? data.updated : '未知';
+        }).catch(function () {
+            document.getElementById('updated-at').textContent = '未知';
+        });
+    </script>
+</body>
+</html>

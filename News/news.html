@@ -201,9 +201,30 @@
             box-shadow: 0 6px 18px rgba(31, 58, 138, 0.16);
         }
 
-        /* “查看图片”提示条 */
-        .news-item .news-more {
+        /* 动态里的操作按钮（如“查询我的报名状态”） */
+        .news-item .news-action {
             display: inline-block;
+            align-self: flex-start;
+            margin-top: 6px;
+            padding: 10px 22px;
+            font-size: 0.98rem;
+            font-weight: bold;
+            font-family: inherit;
+            color: #ffffff;
+            background: linear-gradient(135deg, #1f3a8a 0%, #287ee3 100%);
+            border: none;
+            cursor: pointer;
+            user-select: none;
+            letter-spacing: 0.06em;
+            text-decoration: none;
+            transition: filter 0.2s ease, transform 0.1s ease;
+        }
+
+        .news-item .news-action:hover  { filter: brightness(1.12); }
+        .news-item .news-action:active { transform: translateY(1px); }
+
+        /* “查看图片”提示条 */
+        .news-item .news-more {            display: inline-block;
             align-self: flex-start;
             margin-top: 4px;
             padding: 4px 12px;
@@ -377,6 +398,15 @@
         // ============================================================
                 var NEWS = [
             {
+                date: '2026-11-26',
+                title: '协会组织成员报名进行时！',
+                desc: '协会组织成员报名正在进行中，我们已经收到了一些报名表，' +
+                      '其中有一部分已经顺利归档。要查看你的报名状态，' +
+                      '请点击下方按钮，在弹出页面中依次输入<strong>姓名</strong>和' +
+                      '<strong>学号后四位</strong>即可查询。',
+                action: { text: '查询我的报名状态', href: 'status.html' }
+            },
+            {
                 date: '2026-11-25',
                 title: '干事报名数据收集即将截止！',
                 desc: '干事报名数据收集将于 2026 年 11 月 26 日 0:00 截止：' +
@@ -457,6 +487,12 @@
                     '<span class="news-desc">' + item.desc + '</span>';
                 if (item.note) {
                     bodyHtml += '<span class="news-note">' + item.note + '</span>';
+                }
+                // 带 action 的动态：在卡片里放一个跳转按钮（如“查询我的报名状态”）
+                if (item.action && item.action.href) {
+                    bodyHtml += '<a class="news-action" href="' +
+                                item.action.href + '">' +
+                                (item.action.text || '点击查看') + '</a>';
                 }
                 // 带图片的动态：默认收起，点击卡片才展开
                 var hasPhotos = !!(item.photos && item.photos.length);
