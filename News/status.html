@@ -328,39 +328,46 @@
     </div>
 
     <!-- 查询数据：独立文件，更新数据只需替换此文件，无需改动本页面 -->
-    <script src="data/register-status.js"></script>
     <script>
         // ============================================================
         // 报名状态查询
-        // 数据来源：data/register-status.js（由汇总脚本自动生成）
-        // 数据结构：
-        //   window.REGISTER_STATUS = {
-        //     updated: 'YYYY-MM-DD',
-        //     query: 'phone_last4',
-        //     items: [ { n: 姓名, p: 电话后四位, d: 部门,
-        //                archived: 是否入库, status: 具体状态 }, ... ]
-        //   }
+        // 数据来源：data/register-status.json（由汇总脚本在本地算好生成）
         //
-        // 状态建模：对外只有两种状态——已入库 / 未入库。
-        //   archived = true  -> 已入库
-        //   archived = false -> 未入库
-        // “未归档 / 未提交 / 协会已向你回信”只是未入库的三种可能性，
-        // 仅写进提示文案，不作为独立状态展示。
+        // 【隐私设计】数据文件里【不含任何明文身份信息】，只有：
+        //   { updated, algo: 'sha256', salt, depts: [部门名...],
+        //     items: [ { h: 索引, i: 部门下标, a: 1已入库/0未入库 } ] }
+        // 索引 = SHA256(salt + 姓名 + 分隔符 + 电话后四位)，全部由 Python 端算好。
+        // 浏览器只做两件事：对用户自己输入的内容算一次 SHA256，然后等值比对。
+        //   1. 数据文件被整份下载，也拿不到报名者名单；
+        //   2. 姓名与电话后四位必须同时正确才能命中，无法只枚举姓名撞库；
+        //   3. 命中后只回显用户自己输入的内容，不泄露他人信息；
+        //   4. 部门名单独放字典，条目只存下标，不构成“一人一行”的可读记录。
+        //
+        // 状态只有两种：已入库 / 未入库。
+        // “未归档 / 未提交 / 协会已向你回信”只是未入库的可能性，写进提示文案，不单独展示。
         // ============================================================
+        var DATA_URL = 'data/register-status.json';
+        var MIN_INTERVAL = 800;    // 简易限流：两次查询最小间隔（毫秒）
+
         var nameInput  = document.getElementById('input-name');
         var phoneInput = document.getElementById('input-phone');
         var resultEl   = document.getElementById('result');
         var headEl     = document.getElementById('result-head');
         var bodyEl     = document.getElementById('result-body');
         var noteEl     = document.getElementById('result-note');
+        var btnEl      = document.getElementById('btn-query');
 
-        // 取数据：优先使用本地 JS 变量；若没有则尝试 fetch JSON
+        var cacheData = null;      // 缓存查询数据，避免重复请求
+        var lastClick = 0;
+
         function getData() {
-            if (window.REGISTER_STATUS && window.REGISTER_STATUS.items) {
-                return Promise.resolve(window.REGISTER_STATUS);
-            }
-            return fetch('data/register-status.json', { cache: 'no-store' })
-                .then(function (r) { return r.json(); });
+            if (cacheData) return Promise.resolve(cacheData);
+            return fetch(DATA_URL, { cache: 'no-store' })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function (data) { cacheData = data; return data; });
         }
 
         function normalize(text) {
@@ -371,6 +378,29 @@
             return String(text == null ? '' : text)
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // 用浏览器内置 WebCrypto 计算 SHA-256。
+        // GitHub Pages 为 HTTPS，crypto.subtle 必定可用；
+        // 若极少数环境不可用（如本地 file:// 打开），明确提示而不降级到错误实现。
+        function sha256Hex(text) {
+            if (!(window.crypto && window.crypto.subtle &&
+                  typeof window.crypto.subtle.digest === 'function')) {
+                return Promise.reject(new Error('WEBCRYPTO_UNAVAILABLE'));
+            }
+            return window.crypto.subtle
+                .digest('SHA-256', new TextEncoder().encode(text))
+                .then(function (buf) {
+                    return Array.prototype.map.call(new Uint8Array(buf),
+                        function (b) { return ('0' + b.toString(16)).slice(-2); }
+                    ).join('');
+                });
+        }
+
+        // 索引 = SHA256(salt + \x1f + 姓名 + \x1f + 电话后四位)
+        // 必须与 generate_excel.py 的 make_fingerprint() 完全一致
+        function makeFingerprint(salt, name, tail) {
+            return sha256Hex(salt + '\x1f' + name + '\x1f' + tail);
         }
 
         function row(label, value) {
@@ -387,29 +417,19 @@
             resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        // 未入库分支下的三种现状：各自一句说明 + 徽标配色
-        var PENDING_INFO = {
-            '未归档': {
-                badge: 'pending',
-                note: '你的报名表<strong>尚未入库</strong>。可能原因是：我们已收到报名表，' +
-                      '但其中信息不完整（如未填写姓名或联系方式），暂时无法归档。<br>' +
-                      '请检查报名表并补交，或联系 csustbc@foxmail.com。'
-            },
-            '未提交': {
-                badge: 'pending',
-                note: '你的报名表<strong>尚未入库</strong>。可能原因是：我们目前' +
-                      '<strong>尚未收到</strong>你的报名表。<br>' +
-                      '请下载报名表完整填写后，发送邮件至 csustbc@foxmail.com。'
-            },
-            '协会已向你回信': {
-                badge: 'pending',
-                note: '你的报名表<strong>尚未入库</strong>。可能原因是：协会' +
-                      '<strong>已向你回信</strong>，等待你补充或确认信息。<br>' +
-                      '请查收邮箱或 QQ 消息，按回信中的说明处理。'
-            }
-        };
+        // 未入库：统一一条说明，三种成因只作为可能性并列，不单独拆分展示
+        var PENDING_NOTE =
+            '你的报名表<strong>尚未入库</strong>。可能的情况包括：' +
+            '我们尚未收到你的报名表；报名表信息不完整（如未填写姓名）；' +
+            '或协会已就你的报名表向你回信。<br>' +
+            '请检查邮箱与 QQ 消息，或联系 csustbc@foxmail.com 确认。';
 
         function doQuery() {
+            // 简易限流：防止脚本高频撞库
+            var now = Date.now();
+            if (now - lastClick < MIN_INTERVAL) return;
+            lastClick = now;
+
             var name  = normalize(nameInput.value);
             var phone = normalize(phoneInput.value).replace(/\D/g, '');
 
@@ -432,63 +452,65 @@
             }
 
             getData().then(function (data) {
-                var items = (data && data.items) || [];
-                var hit = null;
-                for (var i = 0; i < items.length; i++) {
-                    if (items[i].n === name && items[i].p === phone) { hit = items[i]; break; }
-                }
+                var salt = data && data.salt;
+                if (!salt) throw new Error('BAD_DATA');
+                return makeFingerprint(salt, name, phone)
+                    .then(function (fp) {
+                        var items = (data && data.items) || [];
+                        var depts = (data && data.depts) || [];
+                        var hit = null;
+                        for (var i = 0; i < items.length; i++) {
+                            if (items[i].h === fp) { hit = items[i]; break; }
+                        }
 
-                if (!hit) {
-                    showResult(
-                        row('查询姓名', escapeHtml(name)) +
-                        row('电话后四位', escapeHtml(phone)),
-                        '未查询到你的报名记录',
-                        '可能的原因：<br>' +
-                        '1. 报名表<strong>尚未收到</strong>，或尚未完成归档；<br>' +
-                        '2. 姓名或电话后四位与报名表不一致（请勿填写网名）；<br>' +
-                        '3. 报名表<strong>未填写姓名</strong>等关键信息，暂时无法匹配。<br>' +
-                        '如有疑问，请联系 csustbc@foxmail.com。'
-                    );
+                        if (!hit) {
+                            showResult('', '未查询到你的报名记录',
+                                '可能的原因：<br>' +
+                                '1. 报名表<strong>尚未收到</strong>，或尚未完成归档；<br>' +
+                                '2. 姓名或电话后四位与报名表不一致（请勿填写网名）；<br>' +
+                                '3. 报名表<strong>未填写姓名</strong>等关键信息，暂时无法匹配。<br>' +
+                                '如有疑问，请联系 csustbc@foxmail.com。'
+                            );
+                            return;
+                        }
+
+                        // 已入库：只回显用户自己输入的内容
+                        if (hit.a === 1) {
+                            var dept = (hit.i >= 0 && depts[hit.i]) ? depts[hit.i] : '待定';
+                            showResult(
+                                row('姓名', escapeHtml(name)) +
+                                row('电话后四位', escapeHtml(phone)) +
+                                row('归档部门', escapeHtml(dept) + '（第一志愿）') +
+                                row('当前状态', '<span class="badge ok">已入库</span>'),
+                                '查询成功 · 已入库',
+                                '你的报名表<strong>已归档</strong>，部门以第一志愿为准。' +
+                                '后续安排请留意会员群通知。'
+                            );
+                            return;
+                        }
+
+                        // 未入库：徽标统一显示“未入库”
+                        showResult(
+                            row('姓名', escapeHtml(name)) +
+                            row('电话后四位', escapeHtml(phone)) +
+                            row('当前状态', '<span class="badge pending">未入库</span>'),
+                            '查询成功 · 未入库',
+                            PENDING_NOTE
+                        );
+                });
+            }).catch(function (err) {
+                if (err && err.message === 'WEBCRYPTO_UNAVAILABLE') {
+                    showResult('', '当前环境不支持安全查询',
+                        '请通过协会站点的正式网址（HTTPS）访问本页面，' +
+                        '不要在本地直接双击打开文件。');
                     return;
                 }
-
-                // 分支一：已入库
-                if (hit.archived) {
-                    showResult(
-                        row('姓名', escapeHtml(hit.n)) +
-                        row('电话后四位', escapeHtml(hit.p)) +
-                        row('归档部门', hit.d ? escapeHtml(hit.d) + '（第一志愿）' : '待定') +
-                        row('当前状态', '<span class="badge ok">' +
-                            escapeHtml(hit.status) + '</span>'),
-                        '查询成功 · 已入库',
-                        '你的报名表<strong>已归档</strong>，部门以第一志愿为准。' +
-                        '后续安排请留意会员群通知。'
-                    );
-                    return;
-                }
-
-                // 分支二：未入库
-                // 徽标统一显示“未入库”；三种成因（未归档/未提交/协会已向你回信）
-                // 只作为可能性写在说明里，不单独拆分展示。
-                var info = PENDING_INFO[hit.status] || {
-                    badge: 'pending',
-                    note: '你的报名表<strong>尚未入库</strong>，' +
-                          '详情请联系 csustbc@foxmail.com。'
-                };
-                showResult(
-                    row('姓名', escapeHtml(hit.n)) +
-                    row('电话后四位', escapeHtml(hit.p)) +
-                    row('当前状态', '<span class="badge ' + info.badge + '">未入库</span>'),
-                    '查询成功 · 未入库',
-                    info.note
-                );
-            }).catch(function () {
                 showResult('', '数据加载失败',
                     '请检查网络后重试，或稍后再访问本页面。');
             });
         }
 
-        document.getElementById('btn-query').addEventListener('click', doQuery);
+        btnEl.addEventListener('click', doQuery);
 
         // 回车即查询
         [nameInput, phoneInput].forEach(function (el) {
@@ -499,8 +521,8 @@
 
         // 显示数据更新时间
         getData().then(function (data) {
-            var el = document.getElementById('updated-at');
-            el.textContent = (data && data.updated) ? data.updated : '未知';
+            document.getElementById('updated-at').textContent =
+                (data && data.updated) ? data.updated : '未知';
         }).catch(function () {
             document.getElementById('updated-at').textContent = '未知';
         });
