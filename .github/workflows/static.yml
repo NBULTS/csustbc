@@ -30,6 +30,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 部署前校验新闻数据文件，格式错误则中断部署（坏数据不上线）。
+      # runner 自带 Node，无需额外安装依赖。
+      - name: Validate news data
+        run: node .github/scripts/validate-news.js
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
@@ -50,3 +55,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
