@@ -236,10 +236,14 @@
             user-select: none;
         }
 
-        /* 图片网格：默认收起，点开卡片才显示；一排两张 */
+        /* 图片网格：默认收起，点开卡片才显示；一排两张。
+           整组限制最大宽度，避免 PC 宽屏下预览图被撑得过大；
+           手机端宽度窄，两列自动收缩填满，不溢出。 */
         .news-item .news-gallery {
             display: none;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            max-width: 340px;               /* 两列各约 160px，限制预览图尺寸 */
+            justify-content: flex-start;
             gap: 10px;
             margin-top: 10px;
             padding-top: 12px;
